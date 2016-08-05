@@ -107,46 +107,49 @@ class CourseValid():
     def val_video(self):
         """
         Проверка видео: наличие ссылки на YouTube либо edx_video_id.
-        При наличии выводится длительнось видео, при отсутствии в отчет пишется
+        При наличии выводится длительнось видео, при отсутствии выводится и
+        пишется в отчет
         предупреждение
         """
         items = self.items
         video_items = [i for i in items if i.category == "video"]
-
         video_strs = []
-
         report = []
-        for v in video_items:
-            if not (v.youtube_id_1_0) and not (v.edx_video_id):
-                report.append("No source for video '{}' "
-                              "in '{}' ".format(v.display_name, v.get_parent().display_name))
-                continue
-
-            mes = ""
-            if v.youtube_id_1_0:
-                mes += youtube_duration(v.youtube_id_1_0)
-            if v.edx_video_id:
-                mes += edx_id_duration(v.edx_video_id)
-            if not mes:
-                report.append("No source for video '{}' "
-                              "in '{}' ".format(v.display_name, v.get_parent().display_name))
-            video_strs.append(u"{} - {}".format(v.display_name, mes))
-
         # Суммирование длительностей всех видео
         total = timedelta()
-        # Если нет соединения с видеосервером - писать репорт
-        for vstr in video_strs:
-            vtime = vstr.split(' - ')[-1]
-            if (not (':' in vtime)) and vtime:
-                report.append("Can't get response from video {}".format(vstr.split(' - ')[0]))
-                continue
-            if not vtime:
-                continue
-            if len(vtime.split(':')) > 2:
-                t = time.strptime(vtime, "%H:%M:%S")
-            else:
-                t = time.strptime(vtime, "%M:%S")
-            total += timedelta(hours=t.tm_hour, minutes=t.tm_min, seconds=t.tm_sec)
+        for v in video_items:
+            mes = ""
+            success = 0
+            if not (v.youtube_id_1_0) and not (v.edx_video_id):
+                mes = "No source for video '{}' " \
+                      "in '{}' ".format(v.display_name, v.get_parent().display_name)
+                report.append(mes)
+
+            if v.youtube_id_1_0:
+                success, cur_mes = youtube_duration(v.youtube_id_1_0)
+                if not success:
+                    report.append(cur_mes)
+                mes += cur_mes
+
+            if v.edx_video_id:
+                success, cur_mes = edx_id_duration(v.edx_video_id)
+                if not success:
+                    report.append(cur_mes)
+                mes += cur_mes
+
+            if success:
+                time_units = len(mes.split(':'))
+                if  time_units > 3:
+                    report.append("Video is longer than 24 hours.")
+                elif time_units > 2:
+                    t = time.strptime(mes, "%H:%M:%S")
+                elif time_units == 2:
+                    t = time.strptime(mes, "%M:%S")
+                else:
+                    t = time.strptime(mes, "%S")
+                total += timedelta(hours=t.tm_hour, minutes=t.tm_min, seconds=t.tm_sec)
+
+            video_strs.append(u"{} - {}".format(v.display_name, mes))
 
         head = "video_id - video_duration(sum: {})".format(str(total))
         results = Report(name="Video",
