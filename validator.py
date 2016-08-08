@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from collections import Counter
 from contentstore.course_group_config import GroupConfiguration
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.http import HttpResponse
 import json
 import logging
@@ -9,9 +9,8 @@ from opaque_keys.edx.keys import CourseKey
 from openedx.core.djangoapps.course_groups.cohorts import get_course_cohorts, get_course_cohort_settings
 from xmodule.modulestore.django import modulestore
 from .utils import Report, youtube_duration, edx_id_duration, build_items_tree
-import time
-from datetime import timedelta
 from models.settings.course_grading import CourseGradingModel
+from .validate_settings import *
 
 
 class CourseValid():
@@ -122,41 +121,34 @@ class CourseValid():
             success = 0
             if not (v.youtube_id_1_0) and not (v.edx_video_id):
                 mes = "No source for video '{}' " \
-                      "in '{}' ".format(v.display_name, v.get_parent().display_name)
+                    "in '{}' ".format(v.display_name, v.get_parent().display_name)
                 report.append(mes)
 
             if v.youtube_id_1_0:
                 success, cur_mes = youtube_duration(v.youtube_id_1_0)
                 if not success:
                     report.append(cur_mes)
-                mes += cur_mes
+                mes = cur_mes
 
             if v.edx_video_id:
                 success, cur_mes = edx_id_duration(v.edx_video_id)
                 if not success:
                     report.append(cur_mes)
-                mes += cur_mes
+                mes = cur_mes
 
             if success:
-                time_units = len(mes.split(':'))
-                if  time_units > 3:
-                    report.append("Video is longer than 24 hours.")
-                elif time_units > 2:
-                    t = time.strptime(mes, "%H:%M:%S")
-                elif time_units == 2:
-                    t = time.strptime(mes, "%M:%S")
-                else:
-                    t = time.strptime(mes, "%S")
-                total += timedelta(hours=t.tm_hour, minutes=t.tm_min, seconds=t.tm_sec)
+                total += mes
+                if mes>timedelta(seconds=MAX_VIDEO_DURATION):
+                    report.append(u"Video {} is longer than 3600 secs".format(v.display_name))
 
-            video_strs.append(u"{} - {}".format(v.display_name, mes))
+            video_strs.append(u"{} - {}".format(v.display_name, unicode(mes)))
 
         head = "video_id - video_duration(sum: {})".format(str(total))
         results = Report(name="Video",
-                         head=head,
-                         body=video_strs,
-                         warnings=report,
-                         )
+            head=head,
+            body=video_strs,
+            warnings=report,
+            )
         return results
 
     def val_grade(self):
@@ -164,6 +156,7 @@ class CourseValid():
         Проверка оценок:
         1)совпадение указанного и имеющегося количества заданий в каждой проверяемой категории,
         2)проверка равенства 100 суммы весов категории
+        3)Отсутствие в курсе заданий с типом, не указанным в настройках
         """
         report = []
         course_details = CourseGradingModel.fetch(self.course_key)
@@ -195,15 +188,20 @@ class CourseValid():
         for num, key in enumerate(grade_types):
             cur_items = [i for i in grade_items if unicode(i.format) == key]
             if len(cur_items) != int(grade_nums[num]):
-                r = u"Task type '{}': supposed to be {} " \
-                    u", found in course {}".format(key, grade_nums[num], len(cur_items))
+                r = u"Task type '{}': supposed to be {}, found in course {}".\
+                    format(key, grade_nums[num], len(cur_items))
                 report.append(r)
-
+        # Проверка отсутствия в материале курсе заданий с типом не указанным в настройках
+        for item in grade_items:
+            if item.format not in grade_types:
+                r = u"Task of type '{}' in course," \
+                    u" no such task type in grading settings"
+                report.append(r)
         results = Report(name="Grade",
-                         head=head,
-                         body=grade_strs,
-                         warnings=report,
-                         )
+            head=head,
+            body=grade_strs,
+            warnings=report,
+            )
         return results
 
     def val_group(self):
@@ -221,15 +219,15 @@ class CourseValid():
         report = []
 
         results = Report(name="Group",
-                         head=head,
-                         body=group_strs,
-                         warnings=report,
-                         )
+            head=head,
+            body=group_strs,
+            warnings=report,
+            )
         return results
 
     def val_xmodule(self):
         """Проверка отсутствия пустых блоков, подсчет количества каждой категории блоков"""
-        xmodule_counts = Counter([i.category for i in self.items])
+        all_cat_dict = Counter([i.category for i in self.items])
         """
         Все категории разделены на первичные(ниже) и
         вторичные - problems, video, polls итд - записывается в others
@@ -237,81 +235,74 @@ class CourseValid():
         Для вторичных категорий выводится только сумма элементов всех
         вторичных категорий
         """
-        primary_cat = ["course",
-                       "chapter",
-                       "sequential",
-                       "vertical",
-                       "problem",
-                       "video",
-                       ]
+        primary_cat = COUNT_N_CHECK_CAT
         """
-        Для exclude_cat НЕ делается проверка вложенных блоков, но
+        Для additional_count_cat НЕ делается проверка вложенных блоков, но
         делается подсчет элементов
         """
-        exclude_cat = ["problem",
-                       "video",
-                       ]
-        secondary_cat = set(xmodule_counts.keys()) - set(primary_cat)
+        additional_count_cat = COUNT_NLY_CAT
+        secondary_cat = set(all_cat_dict.keys()) - set(primary_cat) \
+                        - set(additional_count_cat)
 
-        # Словарь 'любая категория'(включая вторичные): количество элементов
-        categorized_dict = {c: xmodule_counts[c] for c in primary_cat}
-        # Словарь 'первичная категория': количество элементов
-        primary_dict = [(k, categorized_dict[k]) for k in primary_cat]
-        # Словарь 'вторичная категория' : количество элементов. Оставлен на будущее
-        secondary_dict = {c: xmodule_counts[c] for c in secondary_cat}
-        secondary_sum = sum(secondary_dict.values())
+        # Словарь категория:количество для категорий с подробным выводом
+        verbose_dict = [(k, all_cat_dict[k]) for k in primary_cat + additional_count_cat]
+        # Словарь категория:количество для категорий для элементов без подробного вывода
+        silent_dict = {c: all_cat_dict[c] for c in secondary_cat}
+        silent_sum = sum(silent_dict.values())
 
-        xmodule_strs = ["{} - {}".format(k, v) for k, v in primary_dict]
-        xmodule_strs.append("others - {}".format(secondary_sum))
+        xmodule_strs = ["{} - {}".format(k, v) for k, v in verbose_dict]
+        xmodule_strs.append("others - {}".format(silent_sum))
         head = "xmodule_type - xmodule_count"
         report = []
-        # Проверка отсутствия пустых элементов в перв кат кроме exclude_cat
-        check_empty_cat = [x for x in primary_cat if x not in exclude_cat]
+        # Проверка отсутствия пустых элементов в перв кат кроме additional_count_cat
+        check_empty_cat = [x for x in primary_cat]
         primary_items = [i for i in self.items if i.category in check_empty_cat]
         for i in primary_items:
             if not len(i.get_children()):
                 s = "Block '{}'({}) doesn't have any inner blocks or tasks".format(i.display_name, i.category)
                 report.append(s)
         results = Report(name="Module",
-                         head=head,
-                         body=xmodule_strs,
-                         warnings=report
-                         )
+            head=head,
+            body=xmodule_strs,
+            warnings=report
+            )
         return results
 
     def val_dates(self):
         """
         Проверка дат:
         1)Даты старта дочерних блоков больше дат старта блока-родителя
-        2)Наличие блоков с датой старта меньше $сегодня$
-        3)Наличие среди стартававших блоков видимых для студентов
+        2)Наличие блоков с датой старта меньше $завтра
+        3)Наличие среди стартовавших блоков видимых для студентов
         """
         report = []
         items = self.items
-        # Проверка что старт дата child>parent
+        # Проверка что дата старта child>parent
         for child in items:
             parent = child.get_parent()
             if not parent:
                 continue
             if parent.start > child.start:
                 mes = u"'{}' block has start date {}, but his parent '{}' " \
-                      u"has later start date {}".format(child.display_name, child.start,
-                                                        parent.display_name, parent.start)
+                    u"has later start date {}".format(child.display_name, child.start,
+                    parent.display_name, parent.start)
                 report.append(mes)
 
         # Проверка: Не все итемы имеют дату старта больше сегодня
-        now = datetime.now(items[0].start.tzinfo)
-        if all([x.start > now for x in items]):
-            report.append("All course release dates are later than {}".format(now))
+        for x in items:
+            print(x.display_name, x.start)
+        tomorrow = datetime.now(items[0].start.tzinfo) + timedelta(days=1)
+        if all([x.start > tomorrow for x in items]):
+            report.append("All course release dates are later than {}".format(tomorrow))
         # Проверка: существуют элементы с датой меньше сегодня, видимые для студентов и
         # это не элемент course
-        elif all([x.visible_to_staff_only for x in items if (x.start < now and x.category != "course")]):
-            report.append("All released stuff is invisible for students")
+        elif all([x.visible_to_staff_only for x in items if (x.start < tomorrow and x.category != "course")]):
+            report.append("No visible for students stuff by tomorrow")
         result = Report(name="Dates",
-                        head=[],
-                        body=[],
-                        warnings=report,
-                        )
+            head=[],
+            body=[],
+            warnings=report,
+            )
         return result
 
     def val_cohorts(self):
@@ -329,10 +320,10 @@ class CourseValid():
             cohort_strs = []
             report.append(u"Cohorts are disabled")
         result = Report(name="Cohorts",
-                        head="Cohorts - population",
-                        body=cohort_strs,
-                        warnings=report,
-                        )
+            head="Cohorts - population",
+            body=cohort_strs,
+            warnings=report,
+            )
         return result
 
     def val_proctoring(self):
@@ -345,10 +336,10 @@ class CourseValid():
         ]
 
         result = Report(name="Proctoring",
-                        head="Parameter - name",
-                        body=proctor_strs,
-                        warnings=[],
-                        )
+            head="Parameter - name",
+            body=proctor_strs,
+            warnings=[],
+            )
         return result
 
     def val_group_visibility(self):
@@ -362,11 +353,11 @@ class CourseValid():
         name = "Items visibility by group"
         head = "item type - student - " + " - ".join(group_names)
         checked_cats = ["chapter",
-                        "sequential",
-                        "vertical",
-                        "problem",
-                        "video",
-                        ]
+             "sequential",
+             "vertical",
+             "problem",
+             "video",
+             ]
 
         get_items_by_type = lambda x: [y for y in self.items if y.category == x]
 
@@ -402,38 +393,40 @@ class CourseValid():
             gv_strs.append(cat_str)
 
         return Report(name=name,
-                      head=head,
-                      body=gv_strs,
-                      warnings=[]
-                      )
+            head=head,
+            body=gv_strs,
+            warnings=[]
+            )
 
     def val_response_types(self):
-        """Считает по всем problem тэги, соответствующие ответам определенной категории"""
-        problems = [i for i in self.items if i.category == 'problem']
+        """Считает по всем типам problem количество блоков в курсе"""
+        problems = [i for i in self.items if i.category == "problem"]
         # Типы ответов. Взяты из common/lib/capa/capa/tests/test_responsetypes.py
         response_types = ["multiplechoiceresponse",
-                          "truefalseresponse",
-                          "imageresponse",
-                          "symbolicresponse",
-                          "optionresponse",
-                          "formularesponse",
-                          "stringresponse",
-                          "coderesponse",
-                          "choiceresponse",
-                          "javascriptresponse",
-                          "numericalresponse",
-                          "customresponse",
-                          "schematicresponse",
-                          "annotationresponse",
-                          "choicetextresponse",
-                          ]
+            "truefalseresponse",
+            "imageresponse",
+            "symbolicresponse",
+            "optionresponse",
+            "formularesponse",
+            "stringresponse",
+            "coderesponse",
+            "choiceresponse",
+            "javascriptresponse",
+            "numericalresponse",
+            "customresponse",
+            "schematicresponse",
+            "annotationresponse",
+            "choicetextresponse",
+        ]
         response_counts = dict((t, 0) for t in response_types)
         for prob in problems:
             text = prob.get_html()
+            out = [prob.display_name]
             for resp in response_types:
                 count = text.count("&lt;" + resp) + text.count("<" + resp)
                 if count:
-                    response_counts[resp] += count
+                    response_counts[resp] += 1
+                    out.append(resp)
         name = "Response types"
         head = "type - counts"
         rt_strs = []
@@ -441,8 +434,12 @@ class CourseValid():
             if response_counts[resp]:
                 rt_strs.append("{} - {}".format(resp, response_counts[resp]))
         warnings = []
+        if sum(response_counts.values()) != len(problems):
+            warnings.append("Categorized {counted_num} problems out of {problems_num}".format(
+                counted_num=sum(response_counts.values()), problems_num=len(problems)
+            ))
         return Report(name=name,
-                      head=head,
-                      body=rt_strs,
-                      warnings=warnings
-                      )
+            head=head,
+            body=rt_strs,
+            warnings=warnings
+        )

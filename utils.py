@@ -3,10 +3,32 @@ from collections import namedtuple
 import json
 import re
 import time
+from datetime import timedelta as td
 import urllib
 
-
 Report = namedtuple("Report", ["name", "head", "body", "warnings"])
+
+
+def _youtube_time_expand(duration):
+    timeunits = {
+        'w':604800,
+        'd':86400,
+        'h':3600,
+        'm':60,
+        's':1,
+    }
+    duration = duration.lower()
+
+    secs = 0
+    value = ''
+    for c in duration:
+        if c.isdigit():
+            value += c
+            continue
+        if c in timeunits:
+            secs += int(value) * timeunits[c]
+        value = ''
+    return secs
 
 
 def build_items_tree(items):
@@ -87,12 +109,8 @@ def youtube_duration(video_id):
         return 0, u"Can't find video with such id on youtube."
 
     contentDetails = all_data[0]['contentDetails']
-    duration = contentDetails['duration']
-    temp = re.split(r'(\d+)', duration)
-    times = filter(lambda x: x.isdigit(), temp)
-    if len(times) > 3:
-            return 0, u"Is this video longer than 24 hours?"
-    dur = unicode(secs2readable(sum([int(x)*60**num for num, x in enumerate(reversed(times))])))
+    duration = _youtube_time_expand(contentDetails['duration'])
+    dur = td(seconds=duration)
     return 1, dur
 
 
@@ -112,5 +130,5 @@ def edx_id_duration(edx_video_id):
     if not video:
         return 0, u"No video for this edx_video_id:{}".format(edx_video_id)
     temp = video.get('duration', u"Error: didn't get duration from server")
-    num = int(float(temp))
-    return 1, unicode(secs2readable(num))
+    dur = td(seconds=int(float(temp)))
+    return 1, dur
