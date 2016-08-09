@@ -12,16 +12,17 @@ from .utils import Report, youtube_duration, edx_id_duration, build_items_tree
 from models.settings.course_grading import CourseGradingModel
 from .validate_settings import *
 
-
 class CourseValid():
     """Проверка сценариев и формирование логов"""
 
     def __init__(self, request, course_key_string):
         self.request = request
+        self.store = modulestore()
         self.course_key = CourseKey.from_string(course_key_string)
-        self.items = modulestore().get_items(self.course_key)
+        self.items = self.store.get_items(self.course_key)
         self.root, self.edges = build_items_tree(self.items)
         self.reports = []
+
 
     def validate(self):
         """Запуск всех сценариев проверок"""
@@ -206,10 +207,9 @@ class CourseValid():
 
     def val_group(self):
         """Проверка наличия и использования в курсе групп"""
-        store = modulestore()
-        with store.bulk_operations(self.course_key):
-            course = modulestore().get_course(self.course_key)
-            content_group_configuration = GroupConfiguration.get_or_create_content_group(store, course)
+        with self.store.bulk_operations(self.course_key):
+            course = self.store.get_course(self.course_key)
+            content_group_configuration = GroupConfiguration.get_or_create_content_group(self.store, course)
         groups = content_group_configuration["groups"]
 
         is_g_used = lambda x: bool(len(x["usage"]))
@@ -289,14 +289,16 @@ class CourseValid():
                 report.append(mes)
 
         # Проверка: Не все итемы имеют дату старта больше сегодня
-        for x in items:
-            print(x.display_name, x.start)
         tomorrow = datetime.now(items[0].start.tzinfo) + timedelta(days=1)
-        if all([x.start > tomorrow for x in items]):
+        items_by_tomorrow = [x for x in items if (x.start < tomorrow and x.category != "course")]
+
+        if not items_by_tomorrow:
             report.append("All course release dates are later than {}".format(tomorrow))
         # Проверка: существуют элементы с датой меньше сегодня, видимые для студентов и
         # это не элемент course
-        elif all([x.visible_to_staff_only for x in items if (x.start < tomorrow and x.category != "course")]):
+        elif all([not self.store.has_published_version(x) for x in items_by_tomorrow]):
+            report.append("All stuff by tomorrow is not published")
+        elif all([x.visible_to_staff_only for x in items_by_tomorrow]):
             report.append("No visible for students stuff by tomorrow")
         result = Report(name="Dates",
             head=[],
@@ -307,7 +309,7 @@ class CourseValid():
 
     def val_cohorts(self):
         """Проверка наличия в курсе когорт, для каждой вывод их численности либо сообщение об их отсутствии"""
-        course = modulestore().get_course(self.course_key)
+        course = self.store.get_course(self.course_key)
         cohorts = get_course_cohorts(course)
         names = [getattr(x, "name") for x in cohorts]
         users = [getattr(x, "users").all() for x in cohorts]
@@ -328,7 +330,7 @@ class CourseValid():
 
     def val_proctoring(self):
         """Проверка наличия proctored экзаменов"""
-        course = modulestore().get_course(self.course_key)
+        course = self.store.get_course(self.course_key)
         proctor_strs = [
             u"available_proctoring_services - {}".format(
                 getattr(course, "available_proctoring_services", "No such attribute")),
@@ -344,10 +346,9 @@ class CourseValid():
 
     def val_group_visibility(self):
         """Составление таблицы видимости элементов для групп"""
-        store = modulestore()
-        with store.bulk_operations(self.course_key):
-            course = modulestore().get_course(self.course_key)
-            content_group_configuration = GroupConfiguration.get_or_create_content_group(store, course)
+        with self.store.bulk_operations(self.course_key):
+            course = self.store.get_course(self.course_key)
+            content_group_configuration = GroupConfiguration.get_or_create_content_group(self.store, course)
         groups = content_group_configuration["groups"]
         group_names = [g["name"] for g in groups]
         name = "Items visibility by group"
