@@ -5,6 +5,7 @@ import re
 import time
 from datetime import timedelta as td
 import urllib
+from django.utils.translation import ugettext as _
 
 Report = namedtuple("Report", ["name", "head", "body", "warnings"])
 
@@ -38,7 +39,7 @@ def build_items_tree(items):
         if i.category=="course":
             course_root = num
     if course_root is None:
-        raise ValueError(u"No course root in {}".format([i.category for i in items]))
+        raise ValueError(_("No course root in {}").format([i.category for i in items]))
     edges = []
     ids = [i.url_name for i in items]
 
@@ -100,16 +101,16 @@ def youtube_duration(video_id):
     try:
         response = urllib.urlopen(searchUrl).read()
     except IOError:
-        return 0, u"No response from server."
+        return 0, _("No response from server.")
     data = json.loads(response)
-    if data.get('error', False):
-        return 0, u"Error while video duration check:{}".format(data['error'])
-    all_data = data['items']
+    if data.get("error", False):
+        return 0, _("Error occured while video duration check:{}").format(data["error"])
+    all_data = data["items"]
     if  not len(all_data):
-        return 0, u"Can't find video with such id on youtube."
+        return 0, _("Can't find video with such id on youtube.")
 
-    contentDetails = all_data[0]['contentDetails']
-    duration = _youtube_time_expand(contentDetails['duration'])
+    contentDetails = all_data[0]["contentDetails"]
+    duration = _youtube_time_expand(contentDetails["duration"])
     dur = td(seconds=duration)
     return 1, dur
 
@@ -123,12 +124,12 @@ def edx_id_duration(edx_video_id):
     try:
         from openedx.core.djangoapps.video_evms.api import get_video_info
     except ImportError:
-        return u"Can't check edx video id: no api"
+        return _("Can't check edx video id: no api")
     video = get_video_info(edx_video_id)
     if not video:
-        return 0, u"No response from server."
+        return 0, _("No response from server.")
     if not video:
-        return 0, u"No video for this edx_video_id:{}".format(edx_video_id)
-    temp = video.get('duration', u"Error: didn't get duration from server")
+        return 0, _("No video for this edx_video_id:{}".format(edx_video_id))
+    temp = video.get("duration", _("Error: didn't get duration from server"))
     dur = td(seconds=int(float(temp)))
     return 1, dur

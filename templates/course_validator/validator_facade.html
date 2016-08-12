@@ -1,0 +1,27 @@
+<%page expression_filter="h"/>
+<%inherit file="base.html" />
+<%!
+from django.utils.translation import ugettext as _
+from django.core.urlresolvers import reverse
+from django.conf import settings
+%>
+<%block name="title">
+    ${_("Course Validation")}
+</%block>
+
+<%block name="content">
+<div class="wrapper-mast wrapper">
+  <div class="status-release-label">
+    <div class="wrapper-content wrapper">
+        <%trans>
+        <p> This tool is designed to check course before publishing.
+            Different inspections and checks are being performed and then
+        the report will be formed, shown to you and saved. Perhaps validation will take a little time.</p>
+        </%trans>
+    </div>
+  </div>
+     <%trans>
+        <a href = ${ <%url> "course_validator" course_key_string= ${course_key_string} execute=${True} } style="font-size:30px">Validate</a>
+     </%trans>
+ </div>
+</%block>

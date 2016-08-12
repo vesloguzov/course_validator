@@ -8,18 +8,23 @@ from xmodule.modulestore.django import modulestore
 from edxmako.shortcuts import render_to_response
 
 @login_required
-def course_validator_handler(request, course_key_string=None):
+def course_validator_handler(request, course_key_string=None, execute=False):
     """Обработчик url на проверку курса"""
     if request.method != 'GET':
         return redirect(reverse('course_handler', course_key_string))
-    CV = CourseValid(request, course_key_string)
-    CV.validate()
-    CV.send_log()
     course_key = CourseKey.from_string(course_key_string)
     course_module = modulestore().get_course(course_key)
 
-    return render_to_response("dev_course_validator.html", {
+    if execute:
+        CV = CourseValid(request, course_key_string)
+        CV.validate()
+        CV.send_log()
 
-            "sections":CV.get_sections_for_rendering(),
-            "context_course":course_module
-            })
+        return render_to_response("validator_execute.html", {
+                "sections":CV.get_sections_for_rendering(),
+                "context_course":course_module
+                })
+    else:
+        return render_to_response("validator_facade.html", {
+            "course_key_string": course_key_string,
+        })
