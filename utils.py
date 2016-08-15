@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 from collections import namedtuple
 import json
-import re
-import time
 from datetime import timedelta as td
 import urllib
 from django.utils.translation import ugettext as _
+
+
 
 Report = namedtuple("Report", ["name", "head", "body", "warnings"])
 
@@ -68,20 +68,6 @@ def _print_all(item):
             print(at, e.message)
 
 
-def secs2readable(secs):
-    if not isinstance(secs, int):
-        try:
-            secs = int(secs)
-        except ValueError:
-            return secs
-    if secs > 3599: #Больше часа
-        parse = "%H:%M:%S"
-    else:
-        parse = "%M:%S"
-    readable = time.strftime(parse, time.gmtime(secs))
-    return readable
-
-
 def youtube_duration(video_id):
     """
     ATTENTION! В функции используется youtube_api. Необходим
@@ -133,3 +119,5 @@ def edx_id_duration(edx_video_id):
     temp = video.get("duration", _("Error: didn't get duration from server"))
     dur = td(seconds=int(float(temp)))
     return 1, dur
+
+

@@ -10,7 +10,7 @@ from openedx.core.djangoapps.course_groups.cohorts import get_course_cohorts, ge
 from xmodule.modulestore.django import modulestore
 from .utils import Report, youtube_duration, edx_id_duration, build_items_tree
 from models.settings.course_grading import CourseGradingModel
-from .validate_settings import *
+from .settings import *
 from django.utils.translation import ugettext as _
 
 
@@ -334,7 +334,7 @@ class CourseValid():
         """Проверка наличия proctored экзаменов"""
         course = self.store.get_course(self.course_key)
         proctor_strs = [
-            _("Available proctoring services - "),
+            _("Available proctoring services - ") + \
             getattr(course, "available_proctoring_services", _("Not defined")),
             _("Proctoring Service - {}").format(getattr(course, "proctoring_service", _("Not defined")))
         ]

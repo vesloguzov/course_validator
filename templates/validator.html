@@ -1,0 +1,96 @@
+<%page expression_filter="h"/>
+<%inherit file="base.html" />
+<%!
+from django.utils.translation import ugettext as _
+from django.core.urlresolvers import reverse
+from django.conf import settings
+%>
+<%block name="title">
+    ${_("Course Validation")}
+</%block>
+
+<%block name="content">
+    <style>
+        .mybutton {
+            background-color:#2266bb;
+            color:#eedd55;
+            display:inline-block;
+            padding:15px;
+        }
+        .passed {
+            color:#55ee66;
+            font-size: 26px
+        }
+        .failed {
+            color:#ff2200;
+            font-size: 26px;
+        }
+
+        .mytable{
+            width:70%;
+            border-spacing: 5px;
+            text-align: center;
+            font-size: 18px;
+            margin:10px;
+            border: 1px solid black;
+            border-spacing:5px;
+        }
+        .mytable-head{
+            font-size: 22px;
+        }
+        .message{
+            font-size: 16px;
+        }
+
+    </style>
+          <section class="content">
+              <div class="introduction">
+                <h2 class="title">${_("About Course Validation")}</h2>
+                <div >
+                  <p> ${_("This tool is designed to check course before publishing. Different inspections and checks are being performed and then the report will be formed, shown to you and saved. Perhaps validation will take a little time.")}
+                  </p>
+                </div>
+
+                 <h2 class="title">${_("Validation")}</h2>
+                  <a href="${validate_url}" title=${_("Execute validation")}>
+                    <span class="mybutton">
+                      ${_("Validate Course")}
+                    </span>
+                  </a>
+               </div>
+
+
+              % if sections:
+                  % for type_ in sections:
+                      % if type_['passed']:
+                          <h2 class="title passed">${type_['name']}</h2>
+                      % else:
+                          <h2  class="title failed">${type_['name']}</h2>
+                      % endif
+                      % if type_['output']:
+                          <table class="mytable">
+                              <tr class="mytable-head">
+                                  % for name in type_['head']:
+                                      <th>${name}</th>
+                                  % endfor
+                              </tr>
+                              % for line in type_['body']:
+                                  <tr >
+                                      % for item in line:
+                                          <td>${item}</td>
+                                      % endfor
+                                  </tr>
+                              % endfor
+                          </table>
+                      % endif
+                      % for warn in type_['warnings']:
+                          % if type_['passed']:
+                              <p class="passed message">${warn}</p>
+                          % else :
+                              <p class="failed message">${warn}</p>
+                          % endif
+                      % endfor
+                  % endfor
+              % endif
+          </section>
+</%block>
