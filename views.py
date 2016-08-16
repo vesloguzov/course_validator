@@ -8,6 +8,8 @@ from xmodule.modulestore.django import modulestore
 from edxmako.shortcuts import render_to_response
 from django.views.decorators.http import require_GET
 from django.views.decorators.csrf import ensure_csrf_cookie
+from django.http import HttpResponse, JsonResponse
+
 
 __all__ = ["course_validator_handler"]
 
@@ -44,5 +46,6 @@ def course_validator_handler(request, course_key_string=None):
         CV.validate()
         CV.send_log()
         context['sections'] = CV.get_sections_for_rendering()
-
-    return render_to_response("validator.html", context)
+        return(JsonResponse({"why":"<p>Testjson</p>"}))
+    else:
+        return render_to_response("validator.html", context)
