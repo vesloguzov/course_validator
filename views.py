@@ -35,17 +35,21 @@ def course_validator_handler(request, course_key_string=None):
     execute_url = reverse_validator_course_url(course_key)
     execute_url += "?_accept=exec"
 
-    context = {
-        "context_course": course_module,
-        "course_key_string": course_key_string,
-        "validate_url": execute_url,
-    }
-
-    if 'exec' in requested_format:
+    context = dict()
+    print(request.META['CONTENT_TYPE'])
+    if 'exec' in requested_format: #request.META['CONTENT_TYPE']=="application/json":#
         CV = CourseValid(request, course_key_string)
         CV.validate()
         CV.send_log()
         context['sections'] = CV.get_sections_for_rendering()
-        return(JsonResponse({"why":"<p>Testjson</p>"}))
+
+        res = render_to_response("results.html", context)
+        return JsonResponse({"html":str(res.content)})#render_to_response("results.html", context)
+        #return(JsonResponse({"why":"<p>Testjson {}</p>".format(request.META['CONTENT_TYPE'])}))
     else:
+        context.update( {
+        "context_course": course_module,
+        "course_key_string": course_key_string,
+        "validate_url": execute_url,
+    })
         return render_to_response("validator.html", context)

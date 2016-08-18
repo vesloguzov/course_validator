@@ -1,0 +1,34 @@
+<div>
+  % if sections:
+    % for type_ in sections:
+    % if type_['passed']:
+      <div class="passed">
+    % else:
+      <div class="failed">
+    % endif
+        <div class="mypanel">
+          <h2 class="header highlight">${type_['name']}</h2>
+          % if type_['output']:
+            <table class="mytable">
+              <tr class="mytable-head">
+                % for name in type_['head']:
+                  <th>${name}</th>
+                % endfor
+              </tr>
+              % for line in type_['body']:
+                <tr>
+                  % for item in line:
+                    <td>${item}</td>
+                  % endfor
+                </tr>
+              % endfor
+            </table>
+          % endif
+          % for warn in type_['warnings']:
+            <p class="highlight message">${warn}</p>
+          % endfor
+      </div>
+    </div>
+    % endfor
+  % endif
+</div>

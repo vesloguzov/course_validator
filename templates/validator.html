@@ -51,6 +51,9 @@
       border-width: 1px;
     }
 
+    .myhidden{
+      visibility: hidden;
+    }
   </style>
   <section class="content">
     <div class="introduction">
@@ -61,68 +64,44 @@
       </div>
 
       <h2 class="title">${_("Validation")}</h2>
-      <a href="${validate_url}" class="mybutton" title=${_("Execute validation")}>
+      <a href="#" class="mybutton" title=${_("Execute validation")}>
                     <span>
                       ${_("Validate Course")}
                     </span>
       </a>
     </div>
 
-    <div data-load="${validate_url}">
-      <p id="validreport">Replace me</p>
+    <div id="validreport" data-load="${validate_url}">
+      <div id="#myloading" class="myhidden">
+        <p>Идет загрузка, пожалуйста, подождите.</p>
+      </div>
+      <div id="results">
 
-      % if sections:
-        % for type_ in sections:
-        % if type_['passed']:
-          <div class="passed">
-        % else:
-          <div class="failed">
-        % endif
-          <div class="mypanel">
-            <h2 class="header highlight">${type_['name']}</h2>
-            % if type_['output']:
-              <table class="mytable">
-                <tr class="mytable-head">
-                  % for name in type_['head']:
-                    <th>${name}</th>
-                  % endfor
-                </tr>
-                % for line in type_['body']:
-                  <tr>
-                    % for item in line:
-                      <td>${item}</td>
-                    % endfor
-                  </tr>
-                % endfor
-              </table>
-            % endif
-            % for warn in type_['warnings']:
-              <p class="highlight message">${warn}</p>
-            % endfor
-          </div>
-          </div>
-        % endfor
-      % endif
+      </div>
     </div>
   </section>
+
 
   <script type="text/javascript">
     require(["jquery"], function ($) {
       $(document).ready(function () {
-        var dataurl = $("${validate_url}").attr('data-load')
+
+        $("#myloading").bind("ajaxSend", function(){
+          $(this).show();
+          }).bind("ajaxComplete", function(){
+          $(this).hide();
+          });
 
         $(".mybutton").click(function (event) {
-          var respfunc = function(data){
-                      res = JSON.parse(data)
-                      $("#validreport").text(res)
-                      }
+          var dataurl = $("#validreport").attr('data-load')
           $.ajax({
-                    url: dataurl,
-                    type: "GET",
-                    dataType: 'html',
-                    success: respfunc
-                  })
-                });
+            type: 'GET',
+            url: dataurl,
+            success: function(data){
+              $("#results").html(data['html']);
+            },
+
+          })
           return false;
         })
       })
@@ -130,17 +109,3 @@
   </script>
 
 </%block>
-
-"""
-function (event) {
-        var respfunc = function(data){
-                      $("#validreport").html(data)
-                      }
-                  $.ajax({
-                    url: dataurl,
-                    dataType: 'html',
-                    success: respfunc
-                  })
-                  return false;
-                });
-"""
