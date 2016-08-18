@@ -36,7 +36,6 @@ def course_validator_handler(request, course_key_string=None):
     execute_url += "?_accept=exec"
 
     context = dict()
-    print(request.META['CONTENT_TYPE'])
     if 'exec' in requested_format: #request.META['CONTENT_TYPE']=="application/json":#
         CV = CourseValid(request, course_key_string)
         CV.validate()

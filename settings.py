@@ -11,3 +11,5 @@ COUNT_N_CHECK_CAT = ["course",
 COUNT_NLY_CAT = ["problem",
                 "video",
             ]
+
+PATH_SAVED_REPORTS = "/edx/var/edxapp/course_validation/"

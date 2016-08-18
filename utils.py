@@ -120,4 +120,21 @@ def edx_id_duration(edx_video_id):
     dur = td(seconds=int(float(temp)))
     return 1, dur
 
+def map_to_utf8(d):
+    # iterate over the key/values pairings
+    n = dict()
+    for k, v in d.items():
+        # if v is a list join and encode else just encode as it is a string
+        n[k] = [json.dumps(z) for z in v] if isinstance(v, list) else json.dumps(v)
+    return n
+
+
+def dicts_to_csv(dict_datas, fields, path, delim=','):
+    delim = unicode(delim)
+    with open(path, "w") as file:
+        header = u",".join(fields)
+        file.write(header.encode("utf8") + "\n")
+        for pr in dict_datas:
+            line = delim.join([str(json.dumps(unicode(pr[k]))) for k in fields])
+            file.write(line.encode("utf8") + "\n")
 

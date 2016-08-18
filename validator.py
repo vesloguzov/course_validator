@@ -2,16 +2,18 @@
 from collections import Counter
 from contentstore.course_group_config import GroupConfiguration
 from datetime import datetime, timedelta
-from django.http import HttpResponse
 import json
 import logging
 from opaque_keys.edx.keys import CourseKey
 from openedx.core.djangoapps.course_groups.cohorts import get_course_cohorts, get_course_cohort_settings
 from xmodule.modulestore.django import modulestore
-from .utils import Report, youtube_duration, edx_id_duration, build_items_tree
 from models.settings.course_grading import CourseGradingModel
-from .settings import *
 from django.utils.translation import ugettext as _
+import os
+import csv
+from .settings import *
+from .utils import Report, youtube_duration, edx_id_duration, build_items_tree, dicts_to_csv, map_to_utf8
+import codecs
 
 
 class CourseValid():
@@ -24,7 +26,6 @@ class CourseValid():
         self.items = self.store.get_items(self.course_key)
         self.root, self.edges = build_items_tree(self.items)
         self.reports = []
-
 
     def validate(self):
         """Запуск всех сценариев проверок"""
@@ -41,6 +42,7 @@ class CourseValid():
             if report is not None:
                 results.append(report)
         self.reports = results
+        self.write_down_reports()
 
     def get_sections_for_rendering(self):
         sections = []
@@ -60,24 +62,29 @@ class CourseValid():
             sections.append(sec)
         return sections
 
-    def get_HTML_report(self):
-        """Формирование отчета из результатов проверок"""
-        response = HttpResponse()
-        message = ""
-        delim = "\n"
-        for curr in self.reports:
-            message += curr.name + delim
-            if len(curr.body):
-                message += curr.head + delim
-                message += delim.join(curr.body) + delim
-            if len(curr.warnings):
-                message += delim.join(curr.warnings) + delim
-            message += delim
+    def write_down_reports(self):
+        try:
+            if not os.path.exists(PATH_SAVED_REPORTS):
+                os.makedirs(PATH_SAVED_REPORTS)
+            name_parts = [str(self.course_key), str(self.request.user), str(datetime.now()).replace(" ","_")]
+            report_name = PATH_SAVED_REPORTS+"_".join(name_parts)+".csv"
+            field_names = Report._fields
 
-        response.write("<textarea cols='60' rows='60'>")
-        response.write(message)
-        response.write("</textarea>")
-        return response
+            dicts_to_csv([r._asdict() for r in self.reports], field_names, report_name)
+            """"
+            Second way to create report. Performance relation for both methods is unknown
+            with open(report_name,"w") as file:
+                writer = csv.DictWriter(file, fieldnames=field_names)
+                reports = [map_to_utf8(r._asdict()) for r in self.reports]
+                writer.writeheader()
+                writer.writerows(reports)
+            """
+        except Exception as e:
+            r = Report(name=u"This report was not saved!",
+                       head=[],
+                       body=[],
+                       warnings=[str(e)])
+            self.reports.append(r)
 
     def send_log(self):
         """
@@ -92,12 +99,12 @@ class CourseValid():
         results = []
         passed = True
         for r in self.reports:
-            t = ";".join(r.warnings)
-            if not len(t):
+            temp = ";".join(r.warnings)
+            if not len(temp):
                 t = "OK"
             else:
                 passed = False
-            results.append({r.name: t})
+            results.append({r.name: temp})
         log["warnings"] = results
         log["passed"] = passed
         mes = json.dumps(log)
