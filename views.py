@@ -9,7 +9,7 @@ from edxmako.shortcuts import render_to_response
 from django.views.decorators.http import require_GET
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.http import HttpResponse, JsonResponse
-
+from .utils import last_course_validation
 
 __all__ = ["course_validator_handler"]
 
@@ -34,21 +34,26 @@ def course_validator_handler(request, course_key_string=None):
 
     execute_url = reverse_validator_course_url(course_key)
     execute_url += "?_accept=exec"
-
     context = dict()
-    if 'exec' in requested_format: #request.META['CONTENT_TYPE']=="application/json":#
+
+    if 'exec' in requested_format:
         CV = CourseValid(request, course_key_string)
         CV.validate()
         CV.send_log()
         context['sections'] = CV.get_sections_for_rendering()
 
         res = render_to_response("results.html", context)
-        return JsonResponse({"html":str(res.content)})#render_to_response("results.html", context)
-        #return(JsonResponse({"why":"<p>Testjson {}</p>".format(request.META['CONTENT_TYPE'])}))
-    else:
-        context.update( {
+        return JsonResponse({"html":str(res.content)})
+
+    last_check_user, last_check_date = last_course_validation(course_key)
+    if last_check_user and last_check_date:
+        context.update({
+        "last_check_date": str(last_check_date.date()),
+        "last_check_user": last_check_user,
+    })
+    context.update( {
         "context_course": course_module,
         "course_key_string": course_key_string,
         "validate_url": execute_url,
     })
-        return render_to_response("validator.html", context)
+    return render_to_response("validator.html", context)

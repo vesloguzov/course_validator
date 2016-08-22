@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from collections import Counter
 from contentstore.course_group_config import GroupConfiguration
-from datetime import datetime, timedelta
 import json
 import logging
 from opaque_keys.edx.keys import CourseKey
@@ -10,10 +9,9 @@ from xmodule.modulestore.django import modulestore
 from models.settings.course_grading import CourseGradingModel
 from django.utils.translation import ugettext as _
 import os
-import csv
 from .settings import *
-from .utils import Report, youtube_duration, edx_id_duration, build_items_tree, dicts_to_csv, map_to_utf8
-import codecs
+from .utils import Report, youtube_duration, edx_id_duration, build_items_tree, dicts_to_csv
+from .utils import check_special_exam, format_timdelta
 
 
 class CourseValid():
@@ -27,12 +25,15 @@ class CourseValid():
         self.root, self.edges = build_items_tree(self.items)
         self.reports = []
 
+
     def validate(self):
         """Запуск всех сценариев проверок"""
         scenarios = [
-            "video", "grade", "group", "xmodule",
-            "dates", "cohorts", "proctoring",
+            "grade", "special_exams","advanced_modules",
+            "group", "xmodule",
+            "cohorts", "proctoring", "dates",
             "group_visibility", "response_types",
+            "video",
         ]
         results = []
         for sc in scenarios:
@@ -40,9 +41,13 @@ class CourseValid():
             validation = getattr(self, val_name)
             report = validation()
             if report is not None:
-                results.append(report)
+                if isinstance(report, list):
+                    results.extend(report)
+                else:
+                    results.append(report)
         self.reports = results
         self.write_down_reports()
+
 
     def get_sections_for_rendering(self):
         sections = []
@@ -50,8 +55,8 @@ class CourseValid():
             sec = {"name": r.name, "passed": not bool(len(r.warnings))}
             if len(r.body):
                 sec["output"] = True
-                sec["head"] = r.head.split(' - ')
-                sec["body"] = [s.split(' - ') for s in r.body]
+                sec["head"] = r.head
+                sec["body"] = r.body
             else:
                 sec["output"] = False
 
@@ -66,8 +71,8 @@ class CourseValid():
         try:
             if not os.path.exists(PATH_SAVED_REPORTS):
                 os.makedirs(PATH_SAVED_REPORTS)
-            name_parts = [str(self.course_key), str(self.request.user), str(datetime.now()).replace(" ","_")]
-            report_name = PATH_SAVED_REPORTS+"_".join(name_parts)+".csv"
+            name_parts = [str(self.course_key), str(self.request.user.username), str(datetime.now()).replace(" ","_")]
+            report_name = PATH_SAVED_REPORTS + "__".join(name_parts)+".csv"
             field_names = Report._fields
 
             dicts_to_csv([r._asdict() for r in self.reports], field_names, report_name)
@@ -79,8 +84,10 @@ class CourseValid():
                 writer.writeheader()
                 writer.writerows(reports)
             """
+            logging.info("Report is saved:{}".format(report_name))
+
         except Exception as e:
-            r = Report(name=u"This report was not saved!",
+            r = Report(name=_("This report was not saved!"),
                        head=[],
                        body=[],
                        warnings=[str(e)])
@@ -101,7 +108,7 @@ class CourseValid():
         for r in self.reports:
             temp = ";".join(r.warnings)
             if not len(temp):
-                t = "OK"
+                temp = "OK"
             else:
                 passed = False
             results.append({r.name: temp})
@@ -124,42 +131,76 @@ class CourseValid():
         video_items = [i for i in items if i.category == "video"]
         video_strs = []
         report = []
+
+        chapter_video_dict = dict()
+        get_chapter = lambda x: x.get_parent().get_parent().get_parent()
+        chapter_objects = []
+        for v in video_items:
+            chap = get_chapter(v)
+            chap_name = chap.display_name
+            if chap_name in chapter_video_dict.keys():
+                chapter_video_dict[chap_name].append(v)
+            else:
+                chapter_video_dict.update({chap_name:[v]})
+                chapter_objects.append(chap)
+        for chap in chapter_video_dict:
+            chapter_video_dict[chap].sort(key=lambda x:x.start)
+        chapter_objects.sort(key=lambda x:x.start)
         # Суммирование длительностей всех видео
         total = timedelta()
-        for v in video_items:
-            mes = ""
-            success = 0
-            if not (v.youtube_id_1_0) and not (v.edx_video_id):
-                mes = _("No source for video '{name}' in '{vertical}' ").\
-                    format(name=v.display_name, vertical=v.get_parent().display_name)
-                report.append(mes)
+        wrap_valmark = lambda s: unicode("<div class='valmark'>"+ s + "</div>")
+        chap_strs = []
+        for chap in chapter_objects:
+            chap_total = timedelta()
+            chap_key = chap.display_name
+            full_chapter_strs = []
+            for v in chapter_video_dict[chap_key]:
+                mes = ""
+                success = 0
+                if not (v.youtube_id_1_0) and not (v.edx_video_id):
+                    mes = _("No source for video '{name}' in '{vertical}' ").\
+                        format(name=v.display_name, vertical=v.get_parent().display_name)
+                    report.append(mes)
 
-            if v.youtube_id_1_0:
-                success, cur_mes = youtube_duration(v.youtube_id_1_0)
-                if not success:
-                    report.append(cur_mes)
-                mes = cur_mes
+                if v.youtube_id_1_0:
+                    success, cur_mes = youtube_duration(v.youtube_id_1_0)
+                    if not success:
+                        report.append(cur_mes)
+                    mes = cur_mes
 
-            if v.edx_video_id:
-                success, cur_mes = edx_id_duration(v.edx_video_id)
-                if not success:
-                    report.append(cur_mes)
-                mes = cur_mes
+                if v.edx_video_id:
+                    success, cur_mes = edx_id_duration(v.edx_video_id)
+                    if not success:
+                        report.append(cur_mes)
+                    mes = cur_mes
 
-            if success:
-                total += mes
-                if mes>timedelta(seconds=MAX_VIDEO_DURATION):
-                    report.append(_("Video {} is longer than 3600 secs").format(v.display_name))
+                if success:
+                    total += mes
+                    chap_total += mes
+                    if mes>timedelta(seconds=MAX_VIDEO_DURATION):
+                        report.append(_("Video {} is longer than 3600 secs").format(v.display_name))
 
-            video_strs.append(u"{} - {}".format(v.display_name, unicode(mes)))
+                full_chapter_strs.append([v.display_name, unicode(mes)])
+            full_chapter_strs.insert(0, [wrap_valmark(chap_key),
+                                        wrap_valmark(format_timdelta(chap_total))])
+            video_strs.extend(full_chapter_strs)
+            chap_strs.append([chap_key,
+                                 format_timdelta(chap_total)
+                                 ])
 
-        head = _("Video id - Video duration(sum: {})").format(str(total))
-        results = Report(name=_("Video"),
+        head = [_("Video name"), _("Video duration(sum: {})").format(format_timdelta(total))]
+        head_chapter = [_("Chapter name"), _("Chapter summary video time")]
+        results_full = Report(name=_("Video full"),
             head=head,
             body=video_strs,
             warnings=report,
             )
-        return results
+        results_short = Report(name=_("Video short"),
+            head=head_chapter,
+            body=chap_strs,
+            warnings=[],
+        )
+        return [results_short, results_full]
 
     def val_grade(self):
         """
@@ -179,7 +220,7 @@ class CourseValid():
 
         # Вытаскиваем типы и количество заданий, прописанных в настройках
         for g in graders:
-            grade_strs.append(" - ".join(unicode(g[attr]) for attr in grade_attributes))
+            grade_strs.append([unicode(g[attr]) for attr in grade_attributes])
             grade_types.append(unicode(g["type"]))
             grade_nums.append(unicode(g["min_count"]))
             try:
@@ -187,7 +228,7 @@ class CourseValid():
             except ValueError:
                 report.append(_("Error occured during weight summation"))
 
-        head = _("Grade name - Grade count - Grade kicked - Grade weight")
+        head = [_("Grade name"), _("Grade count"), _("Grade kicked"), _("Grade weight")]
 
         # Проверка суммы весов
         if sum(grade_weights) != 100:
@@ -222,8 +263,8 @@ class CourseValid():
 
         is_g_used = lambda x: bool(len(x["usage"]))
         # запись для каждой группы ее использования
-        group_strs = [u"{} - {}".format(g["name"], is_g_used(g)) for g in groups]
-        head = _("Group name - Group used")
+        group_strs = [[g["name"], str(is_g_used(g))] for g in groups]
+        head = [_("Group name"), _("Group used")]
         report = []
 
         results = Report(name=_("Group"),
@@ -258,9 +299,9 @@ class CourseValid():
         silent_dict = {c: all_cat_dict[c] for c in secondary_cat}
         silent_sum = sum(silent_dict.values())
 
-        xmodule_strs = ["{} - {}".format(k, v) for k, v in verbose_dict]
-        xmodule_strs.append(_("others - {}").format(silent_sum))
-        head = _("Module type - Module count")
+        xmodule_strs = [[str(k), str(v)] for k, v in verbose_dict]
+        xmodule_strs.append([_("others"), unicode(silent_sum)])
+        head = [_("Module type"), _("Module count")]
         report = []
         # Проверка отсутствия пустых элементов в перв кат кроме additional_count_cat
         check_empty_cat = [x for x in primary_cat]
@@ -297,17 +338,17 @@ class CourseValid():
                     n2=parent.display_name, d2=parent.start)
                 report.append(mes)
 
-        # Проверка: Не все итемы имеют дату старта больше сегодня
-        tomorrow = datetime.now(items[0].start.tzinfo) + timedelta(days=1)
-        items_by_tomorrow = [x for x in items if (x.start < tomorrow and x.category != "course")]
+        date_check = datetime.now(items[0].start.tzinfo) + timedelta(days=DELTA_DATE_CHECK)
+        # Проверка: Не все итемы имеют дату старта больше date_check
+        items_by_date_check = [x for x in items if (x.start < date_check and x.category != "course")]
 
-        if not items_by_tomorrow:
-            report.append(_("All course release dates are later than {}").format(tomorrow))
-        # Проверка: существуют элементы с датой меньше сегодня, видимые для студентов и
+        if not items_by_date_check:
+            report.append(_("All course release dates are later than {}").format(date_check))
+        # Проверка: существуют элементы с датой меньше date_check, видимые для студентов и
         # это не элемент course
-        elif all([not self.store.has_published_version(x) for x in items_by_tomorrow]):
+        elif all([not self.store.has_published_version(x) for x in items_by_date_check]):
             report.append(_("All stuff by tomorrow is not published"))
-        elif all([x.visible_to_staff_only for x in items_by_tomorrow]):
+        elif all([x.visible_to_staff_only for x in items_by_date_check]):
             report.append(_("No visible for students stuff by tomorrow"))
         result = Report(name=_("Dates"),
             head=[],
@@ -325,13 +366,13 @@ class CourseValid():
         report = []
         cohort_strs = []
         for num, x in enumerate(names):
-            cohort_strs.append("{} - {}".format(x, len(users[num])))
+            cohort_strs.append([x, str(len(users[num]))])
         is_cohorted = get_course_cohort_settings(self.course_key).is_cohorted
         if not is_cohorted:
             cohort_strs = []
             report.append(_("Cohorts are disabled"))
-        result = Report(name=_("Cohorts"),
-            head=_("Cohorts - population"),
+        result = Report(name=_(" Cohorts "),
+            head=[_(" Cohorts "),_("Population")],
             body=cohort_strs,
             warnings=report,
             )
@@ -340,14 +381,18 @@ class CourseValid():
     def val_proctoring(self):
         """Проверка наличия proctored экзаменов"""
         course = self.store.get_course(self.course_key)
+        check_avail_proctor_service = [_("Available proctoring services"),
+            getattr(course, "available_proctoring_services", _("Not defined"))]
+        check_proctor_service = [_("Proctoring Service"),
+                                              unicode(getattr(course, "proctoring_service", _("Not defined")))]
+
         proctor_strs = [
-            _("Available proctoring services - ") + \
-            getattr(course, "available_proctoring_services", _("Not defined")),
-            _("Proctoring Service - {}").format(getattr(course, "proctoring_service", _("Not defined")))
+            check_avail_proctor_service,
+            check_proctor_service
         ]
 
         result = Report(name=_("Proctoring"),
-            head=_("Parameter - Value"),
+            head=[_("Parameter"), _("Value")],
             body=proctor_strs,
             warnings=[],
             )
@@ -361,7 +406,7 @@ class CourseValid():
         groups = content_group_configuration["groups"]
         group_names = [g["name"] for g in groups]
         name = _("Items visibility by group")
-        head = _("item type - usual student - ") + " - ".join(group_names)
+        head = [_("Item type"),_("Usual student")] + group_names
         checked_cats = ["chapter",
              "sequential",
              "vertical",
@@ -399,7 +444,7 @@ class CourseValid():
             stud_vis_for_cat = str(vis["student"])
 
             cat_list = [item_category] + [stud_vis_for_cat] + [str(vis[gn]) for gn in group_names]
-            cat_str = " - ".join(cat_list)
+            cat_str = cat_list
             gv_strs.append(cat_str)
 
         return Report(name=name,
@@ -438,13 +483,17 @@ class CourseValid():
                     response_counts[resp] += 1
                     out.append(resp)
         name = _("Response types")
-        head = _("type - counts")
+        head = [_("Type"),_("Counts")]
         rt_strs = []
         for resp in response_types:
             if response_counts[resp]:
-                rt_strs.append("{} - {}".format(resp, response_counts[resp]))
+                rt_strs.append([resp, str(response_counts[resp])])
+        rt_strs.append([_("Responses sum"), unicode(sum(response_counts.values()))])
+        rt_strs.append([_("Problems sum"), unicode(len(problems))])
+
         warnings = []
-        if sum(response_counts.values()) != len(problems):
+
+        if sum(response_counts.values()) < len(problems):
             warnings.append(_("Categorized {counted_num} problems out of {problems_num}").format(
                 counted_num=sum(response_counts.values()), problems_num=len(problems)
             ))
@@ -453,3 +502,45 @@ class CourseValid():
             body=rt_strs,
             warnings=warnings
         )
+
+    def val_advanced_modules(self):
+        """
+        Выводить все подключенные к OpenEdx модули
+        """
+        course = self.store.get_course(self.course_key)
+        advanced_modules = [[x] for x in course.advanced_modules]
+        name = _("Advanced Modules")
+        head = [_("Module name")]
+        return Report(name=name,
+                      head=head,
+                      body=advanced_modules,
+                      warnings=[]
+        )
+
+    def val_special_exams(self):
+        sequentials = [i for i in self.items if i.category=='sequential']
+        special_exams = [i for i in sequentials if check_special_exam(i)]
+        head = [_("Exam name"),_("Exam chapter"),_("Grade name"), _("Start date"),
+                  _("Duration limit"), _("Due date"), _("Is proctored exam"),
+                  ]
+        body = []
+        for se in special_exams:
+            name = se.display_name
+            chapter_name = se.get_parent().display_name
+            grade = unicode(se.format)
+            start = str(se.start)
+            if se.is_time_limited:
+                duration = format_timdelta(timedelta(minutes=se.default_time_limit_minutes))
+            else:
+                duration = 'None'
+            due_date = str(se.due)
+            proctored = se.is_proctored_exam
+            body.append([name, chapter_name, grade, start, duration, due_date, proctored])
+
+        return Report(name=_("Special exams"),
+                      head=head,
+                      body=body,
+                      warnings=[]
+                      )
+
+

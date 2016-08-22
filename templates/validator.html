@@ -9,57 +9,103 @@
   ${_("Course Validation")}
 </%block>
 
-<%block name="content">
+<%block name="header_extras">
   <style>
     .mybutton {
-      background-color: #2266bb;
-      color: #eedd55;
-      display: inline-block;
-      padding: 15px;
+        background-color:#6699aa;
+        color: #ffddaa;
+        display: inline-block;
+        font-weight: bold;
+        font-size: 25px;
+        padding: 15px;
     }
 
     .passed .highlight {
-      color: #11aa44;
+        color: #11aa44;
     }
 
     .failed .highlight {
-      color: #ff2200;
+        color: #ff2200;
     }
 
     .mytable {
-      width: 70%;
-      border-spacing: 5px;
-      text-align: center;
-      font-size: 18px;
-      margin: 10px;
+        width: 100%;
+        border-spacing: 5px;
+        font-size: 18px;
+        margin: 10px;
+        text-align: left;
+        padding-bottom: 10px;
     }
 
     .mytable-head {
-      font-size: 22px;
+        font-size: 22px;
     }
 
     .message {
-      font-size: 16px;
+        font-size: 16px;
     }
 
     .header {
-      font-size: 26px;
+        font-size: 26px;
     }
 
     .mypanel {
-      border-style: solid;
-      border-width: 1px;
+        border-style: solid;
+        border-width: 1px;
+    }
+    .valmark{
+        font-size:20px;
+        font-weight: bold;
+    }
+    .myhidden{
+        visibility: hidden;
+    }
+    #loading{
+        display:  none;
+        font-size: 36px;
+        color: #6699aa;
     }
 
-    .myhidden{
-      visibility: hidden;
-    }
   </style>
+</%block>
+
+
+<%block name="jsextra">
+  <script type="text/javascript">
+    require(["jquery"], function ($) {
+      $(document).ready(function () {
+
+        $(".mybutton").click(function (event) {
+          var dataurl = $("#validreport").attr('data-load')
+          $.ajax({
+            type: 'GET',
+            url: dataurl,
+            beforeSend: function() {
+              $('#loading').show();
+            },
+            complete: function(){
+              $('#loading').hide();
+            },
+            success: function(data){
+              $("#results").html(data['html']);
+              $("#loading").css('color','red');
+            },
+          })
+          return false;
+        })
+
+      })
+    })
+  </script>
+</%block>
+
+<%block name="content">
   <section class="content">
     <div class="introduction">
       <h2 class="title">${_("About Course Validation")}</h2>
       <div>
-        <p> ${_("This tool is designed to check course before publishing. Different inspections and checks are being performed and then the report will be formed, shown to you and saved. Perhaps validation will take a little time.")}
+        <p>
+          ${_("This tool is designed to check course before publishing. Different inspections and checks are being performed and then the report will be formed, shown to you and saved. Perhaps validation will take a little time.")}
         </p>
       </div>
 
@@ -71,41 +117,24 @@
       </a>
     </div>
 
+  % if last_check_date and last_check_user:
+      <p>
+        ${_("Last check was done at {date} by {user}").format(date=last_check_date, user=last_check_user)}
+      </p>
+  % else:
+    <p>
+        ${_("This course have never been checked.")}
+    </p>
+  % endif
+
     <div id="validreport" data-load="${validate_url}">
-      <div id="#myloading" class="myhidden">
-        <p>Идет загрузка, пожалуйста, подождите.</p>
+      <div id="loading">
+        <p id="dots"> ${_("Loading in progress, please wait.")}</p>
       </div>
       <div id="results">
 
       </div>
     </div>
   </section>
-
-
-  <script type="text/javascript">
-    require(["jquery"], function ($) {
-      $(document).ready(function () {
-
-        $("#myloading").bind("ajaxSend", function(){
-          $(this).show();
-          }).bind("ajaxComplete", function(){
-          $(this).hide();
-          });
-
-        $(".mybutton").click(function (event) {
-          var dataurl = $("#validreport").attr('data-load')
-          $.ajax({
-            type: 'GET',
-            url: dataurl,
-            success: function(data){
-              $("#results").html(data['html']);
-            },
-
-          })
-          return false;
-        })
-      })
-    })
-  </script>
 
 </%block>

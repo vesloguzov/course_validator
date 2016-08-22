@@ -2,9 +2,11 @@
 from collections import namedtuple
 import json
 from datetime import timedelta as td
+import datetime
 import urllib
 from django.utils.translation import ugettext as _
-
+from .settings import PATH_SAVED_REPORTS
+import os
 
 
 Report = namedtuple("Report", ["name", "head", "body", "warnings"])
@@ -120,6 +122,7 @@ def edx_id_duration(edx_video_id):
     dur = td(seconds=int(float(temp)))
     return 1, dur
 
+
 def map_to_utf8(d):
     # iterate over the key/values pairings
     n = dict()
@@ -138,3 +141,54 @@ def dicts_to_csv(dict_datas, fields, path, delim=','):
             line = delim.join([str(json.dumps(unicode(pr[k]))) for k in fields])
             file.write(line.encode("utf8") + "\n")
 
+def last_course_validation(course_key):
+    all_reports = os.listdir(PATH_SAVED_REPORTS)
+    this_course_reports = [r for r in all_reports if str(course_key) in r]
+    if not this_course_reports:
+        return None, None
+    reporter_name, report_date = [], []
+    today = datetime.datetime.now()
+    for r in this_course_reports:
+        _, name, date = r.strip(".csv").split("__")
+        date_obj = datetime.datetime.strptime(date, "%Y-%m-%d_%H:%M:%S.%f")
+        reporter_name.append(name)
+        report_date.append(date_obj)
+    deltas = [today - d for d in report_date]
+    ind = deltas.index(min(deltas))
+    return reporter_name[ind], report_date[ind]
+
+
+import time
+
+def timeit(method):
+
+    def timed(*args, **kw):
+        ts = time.time()
+        result = method(*args, **kw)
+        te = time.time()
+
+        print '%r (%r, %r) %2.2f sec' % \
+              (method.__name__, args, kw, te-ts)
+        return result
+
+    return timed
+
+def format_timdelta(tdobj):
+    s = tdobj.total_seconds()
+    return u"{:.0f}:{:.0f}:{:.0f}".format(s // 3600, s % 3600 // 60, s % 60)
+
+
+def check_special_exam(seq):
+    """
+    Проверяет является ли объект seq специальным экзаменом,
+    т.е. верно ли хотя бы одно поле
+    :param seq:
+    :return:
+    """
+    fields = ['is_entrance_exam',
+              'is_practice_exame',
+              'is_proctored_exam',
+              'is_time_limited'
+              ]
+    answ = sum([getattr(seq, y, False) for y in fields])
+    return answ
