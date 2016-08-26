@@ -29,11 +29,11 @@ class CourseValid():
     def validate(self):
         """Запуск всех сценариев проверок"""
         scenarios = [
-            "grade", "special_exams","advanced_modules",
+            "video", "grade", "special_exams","advanced_modules",
             "group", "xmodule",
             "cohorts", "proctoring", "dates",
             "group_visibility", "response_types",
-            "video",
+            
         ]
         results = []
         for sc in scenarios:

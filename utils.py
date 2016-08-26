@@ -109,13 +109,13 @@ def edx_id_duration(edx_video_id):
     Returns: 1, Длительность
     или      0, текст ошибки
     """
+    print("In Video")
     try:
         from openedx.core.djangoapps.video_evms.api import get_video_info
     except ImportError:
-        return _("Can't check edx video id: no api")
+        return 0, _("Can't check edx video id: no api")
+    print("Imported")
     video = get_video_info(edx_video_id)
-    if not video:
-        return 0, _("No response from server.")
     if not video:
         return 0, _("No video for this edx_video_id:{}".format(edx_video_id))
     temp = video.get("duration", _("Error: didn't get duration from server"))
@@ -142,6 +142,8 @@ def dicts_to_csv(dict_datas, fields, path, delim=','):
             file.write(line.encode("utf8") + "\n")
 
 def last_course_validation(course_key):
+    if not os.path.exists(PATH_SAVED_REPORTS):
+        return None, None
     all_reports = os.listdir(PATH_SAVED_REPORTS)
     this_course_reports = [r for r in all_reports if str(course_key) in r]
     if not this_course_reports:
