@@ -1,0 +1,325 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2016-08-23 11:28+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#: templates/v.py:9
+msgid "Course Validation"
+msgstr "Проверка Курса"
+
+#: templates/v.py:105
+msgid "About Course Validation"
+msgstr "Про Проверку Курса"
+
+#: templates/v.py:108
+msgid ""
+"This tool is designed to check course before publishing. Different "
+"inspections and checks are being performed and then the report will be "
+"formed, shown to you and saved. Perhaps validation will take a little time."
+msgstr ""
+"Этот инструмент сделан для проверки курса перед выпуском. Во время проверки "
+"сверяются параметры курса с его содержимым, составляется  и сохраняется "
+"отчет. Проверка может занять некоторое время"
+
+#: templates/v.py:112
+msgid "Validation"
+msgstr "Проверка"
+
+#: templates/v.py:113
+msgid "Execute validation"
+msgstr "Выполнить проверку"
+
+#: templates/v.py:115
+msgid "Validate Course"
+msgstr "Проверить курс"
+
+#: templates/v.py:122
+msgid "Last check was done at {date} by {user}"
+msgstr "Последняя проверка была сделана {date} числа пользователем {user}"
+
+#: templates/v.py:126
+msgid "This course have never been checked."
+msgstr "Этот курс еще не проверяли"
+
+#: templates/v.py:132
+msgid "Loading in progress, please wait."
+msgstr "Идет загрузка, пожалуйста, подождите."
+
+#: utils.py:44
+msgid "No course root in {}"
+msgstr "Нет корня курса среди {}"
+
+#: utils.py:92 utils.py:118
+msgid "No response from server."
+msgstr "Нет ответа от сервера"
+
+#: utils.py:95
+msgid "Error occured while video duration check:{}"
+msgstr "Во время проверки видео произошла ошибка:{}"
+
+#: utils.py:98
+msgid "Can't find video with such id on youtube."
+msgstr "Видео с таким id не надено на Youtube"
+
+#: utils.py:115
+msgid "Can't check edx video id: no api"
+msgstr "Проверка видео по edx_id не удалась: не определен API"
+
+#: utils.py:120
+msgid "No video for this edx_video_id:{}"
+msgstr "Видео не найдено для этого edx_video_id"
+
+#: utils.py:121
+msgid "Error: didn't get duration from server"
+msgstr "Ошибка: длительность видео не получена от сервера"
+
+#: validator.py:90
+msgid "This report was not saved!"
+msgstr "Отчет не был сохранен!"
+
+#: validator.py:160
+msgid "No source for video '{name}' in '{vertical}' "
+msgstr "Для видео '{name}' в '{vertical}' не найден источник "
+
+#: validator.py:180
+msgid "Video {} is longer than 3600 secs"
+msgstr "Видео {} длиннее 3600 секунд"
+
+#: validator.py:187
+msgid "Video name"
+msgstr "Название видео"
+
+#: validator.py:187
+msgid "Video duration(sum: {})"
+msgstr "Длительность видео(суммарно: {})"
+
+#: validator.py:188
+msgid "Chapter name"
+msgstr "Название главы"
+
+#: validator.py:188
+msgid "Chapter summary video time"
+msgstr "Суммарное время видео в главе"
+
+#: validator.py:189
+msgid "Video full"
+msgstr "Видео(полностью)"
+
+#: validator.py:194
+msgid "Video short"
+msgstr "Видео(кратко)"
+
+#: validator.py:225
+msgid "Error occured during weight summation"
+msgstr "Во время суммирования весов произошла ошибка"
+
+#: validator.py:227 validator.py:519
+msgid "Grade name"
+msgstr "Название оценки"
+
+#: validator.py:227
+msgid "Grade count"
+msgstr "Количество оценок"
+
+#: validator.py:227
+msgid "Grade kicked"
+msgstr "Оценок отбрасывается"
+
+#: validator.py:227
+msgid "Grade weight"
+msgstr "Вес оценки"
+
+#: validator.py:231
+msgid "Tasks weight sum({}) is not equal to 100"
+msgstr "Сумма весов оценок равна {}, а не 100"
+
+#: validator.py:238
+msgid "Task type '{name}': supposed to be {n1}, found in course {n2}"
+msgstr "Тип задач '{name}': должно быть {n1}, найдено в курсе {n2}"
+
+#: validator.py:244
+msgid "Task of type '{}' in course, no such task type in grading settings"
+msgstr "Тип задач '{} найден в курсе, но не установлена в настройках оценок"
+
+#: validator.py:246
+msgid "Grade"
+msgstr "Оценка"
+
+#: validator.py:263
+msgid "Group name"
+msgstr "Имя группы"
+
+#: validator.py:263
+msgid "Group used"
+msgstr "Группа используется"
+
+#: validator.py:266
+msgid "Group"
+msgstr "Группа"
+
+#: validator.py:299
+msgid "others"
+msgstr "Остальные"
+
+#: validator.py:300
+msgid "Module type"
+msgstr "Тип модуля"
+
+#: validator.py:300
+msgid "Module count"
+msgstr "Количество модулей"
+
+#: validator.py:307
+msgid "Block '{name}'({cat}) doesn't have any inner blocks or tasks"
+msgstr "Блок '{name}'({cat}) не содержит внутри себя других блоков и заданий"
+
+#: validator.py:310
+msgid "Module"
+msgstr "Модуль"
+
+#: validator.py:332
+msgid ""
+"'{n1}' block has start date {d1}, but his parent '{n2}' has later start date "
+"{d2}"
+msgstr ""
+"Блок '{n1}' запускается {d1}, а его родитель '{n2}' запускается позже {d2}"
+
+#: validator.py:342
+msgid "All course release dates are later than {}"
+msgstr "Все даты запуска в курсе позднее чем  {}"
+
+#: validator.py:346
+msgid "All stuff by tomorrow is not published"
+msgstr "Весь доступный к завтра материал не опубликован"
+
+#: validator.py:348
+msgid "No visible for students stuff by tomorrow"
+msgstr "Весь доступный к завтра материал не видим студентам"
+
+#: validator.py:349
+msgid "Dates"
+msgstr "Даты"
+
+#: validator.py:369
+msgid "Cohorts are disabled"
+msgstr "Когорты отключены"
+
+#: validator.py:370 validator.py:371
+msgid " Cohorts "
+msgstr "Когорты"
+
+#: validator.py:371
+msgid "Population"
+msgstr "Количество"
+
+#: validator.py:380
+msgid "Available proctoring services"
+msgstr "Доступные сервисы прокторинга"
+
+#: validator.py:381 validator.py:383
+msgid "Not defined"
+msgstr "Не опредлено"
+
+#: validator.py:382
+msgid "Proctoring Service"
+msgstr "Сервис прокторинга"
+
+#: validator.py:390
+msgid "Proctoring"
+msgstr "Прокторинг"
+
+#: validator.py:391
+msgid "Parameter"
+msgstr "Параметр"
+
+#: validator.py:391
+msgid "Value"
+msgstr "Значение"
+
+#: validator.py:404
+msgid "Items visibility by group"
+msgstr "Видимость объектов по группам"
+
+#: validator.py:405
+msgid "Item type"
+msgstr "Тип раздела"
+
+#: validator.py:405
+msgid "Usual student"
+msgstr "Обычный студент"
+
+#: validator.py:481
+msgid "Response types"
+msgstr "Тип ответа"
+
+#: validator.py:482
+msgid "Type"
+msgstr "Тип"
+
+#: validator.py:482
+msgid "Counts"
+msgstr "Количество"
+
+#: validator.py:487
+msgid "Responses sum"
+msgstr "Количество ответов"
+
+#: validator.py:488
+msgid "Problems sum"
+msgstr "Количество задач"
+
+#: validator.py:493
+msgid "Categorized {counted_num} problems out of {problems_num}"
+msgstr "Удалось категоризировать {counted_num} проблем из {problems_num}"
+
+#: validator.py:508
+msgid "Advanced Modules"
+msgstr "Дополнительные Модули"
+
+#: validator.py:509
+msgid "Module name"
+msgstr "Имя модуля"
+
+#: validator.py:519
+msgid "Exam name"
+msgstr "Название экзамена"
+
+#: validator.py:519
+msgid "Exam chapter"
+msgstr "Глава"
+
+#: validator.py:519
+msgid "Start date"
+msgstr "Дата старта"
+
+#: validator.py:520
+msgid "Duration limit"
+msgstr "Время прохождения"
+
+#: validator.py:520
+msgid "Due date"
+msgstr "Финальный срок"
+
+#: validator.py:520
+msgid "Is proctored exam"
+msgstr "Экзамен с прокторингом"
+
+#: validator.py:536
+msgid "Special exams"
+msgstr "Особые экзамены"
