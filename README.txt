@@ -1,5 +1,11 @@
 Installation
-1) pip install -e course_validator/
+0)  vagrant ssh
+    sudo su edxapp
+    mkdir /edx/app/edxapp/venv/edxapp/src/edx-course-validator
+    cd /edx/app/edxapp/venv/edxapp/src/edx-course-validator
+    git clone https://github.com/zimka/course_validator.git
+
+1) pip install -e .
 2) edx-platform/cms/envs/(some environment file, e.g. 'devstack').py: paste code at the end of file
 
 FEATURES["COURSE_VALIDATOR"] = True
@@ -20,7 +26,7 @@ if settings.FEATURES.get('COURSE_VALIDATOR'):
     )
 
 4) Find edx-platform/cms/templates/widgets/header.html:
-    4.1) Find place (~130 string):
+    4.1) Find place (~125 string):
               <div class="nav-sub">
                 <ul>
                   <li class="nav-item nav-course-tools-checklists">

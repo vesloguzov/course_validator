@@ -12,8 +12,8 @@ COUNT_N_CHECK_CAT = ["course",
 COUNT_NLY_CAT = ["problem",
                 "video",
             ]
-# Путь где сохраняются отчеты
-PATH_SAVED_REPORTS = "/edx/var/edxapp/course_validation/"
+# Путь где сохраняются отчеты. Может, но не обязана содержать {organization}, {course_number}, {course_run}
+PATH_SAVED_REPORTS_TEMPLATE = "/edx/var/edxapp/data/{organization}/{course_number}/{course_run}/"
 
 # Настройка момента, относительно которого проводится проверка дат
 # 2 - послезавтра, 1- завтра, 0 - сегодня, -1 -вчера

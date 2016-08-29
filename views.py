@@ -9,7 +9,8 @@ from edxmako.shortcuts import render_to_response
 from django.views.decorators.http import require_GET
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.http import HttpResponse, JsonResponse
-from .utils import last_course_validation
+from .utils import last_course_validation, path_saved_reports
+
 
 __all__ = ["course_validator_handler"]
 
@@ -45,12 +46,15 @@ def course_validator_handler(request, course_key_string=None):
         res = render_to_response("results.html", context)
         return JsonResponse({"html":str(res.content)})
 
-    last_check_user, last_check_date = last_course_validation(course_key)
+
+    path = path_saved_reports(course_key_string)
+    last_check_user, last_check_date = last_course_validation(course_key, path)
     if last_check_user and last_check_date:
         context.update({
         "last_check_date": str(last_check_date.date()),
         "last_check_user": last_check_user,
     })
+
     context.update( {
         "context_course": course_module,
         "course_key_string": course_key_string,

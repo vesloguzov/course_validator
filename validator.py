@@ -10,11 +10,100 @@ from models.settings.course_grading import CourseGradingModel
 from django.utils.translation import ugettext as _
 import os
 from .settings import *
-from .utils import Report, youtube_duration, edx_id_duration, build_items_tree, dicts_to_csv
-from .utils import check_special_exam, format_timdelta
+from .utils import Report, dicts_to_csv
+from .utils import timeit, path_saved_reports
+import urllib
+from datetime import timedelta as td
 
 
-class CourseValid():
+class VideoMixin():
+    """
+    Сюда вынесены меоды касающиеся работы с видео
+    """
+
+    def youtube_duration(self, video_id):
+        """
+        ATTENTION! В функции используется youtube_api. Необходим
+        api_key. Для получения api_key:
+        1.Зарегистрироваться на console.developers.google.com
+        2. на главной YouTube API >YouTube Data API
+        3. Включить Youtube Api
+        4. В учетных данных (Credentials) взять ключ
+
+        Определяет длительность видео с YouTube по video_id, гда
+        video_id это часть url: https://youtu.be/$video_id$
+        Returns: 1, Длительность
+        или      0, текст ошибки
+        """
+        api_key = "AIzaSyCnxGGegKJ1_R-cEVseGUrAcFff5VHXgZ0"
+        searchUrl = "https://www.googleapis.com/youtube/v3/videos?id=" + video_id + "&key=" + api_key + "&part=contentDetails"
+        try:
+            response = urllib.urlopen(searchUrl).read()
+        except IOError:
+            return 0, _("No response from server.")
+        data = json.loads(response)
+        if data.get("error", False):
+            return 0, _("Error occured while video duration check:{}").format(data["error"])
+        all_data = data["items"]
+        if not len(all_data):
+            return 0, _("Can't find video with such id on youtube.")
+
+        contentDetails = all_data[0]["contentDetails"]
+        duration = self._youtube_time_expand(contentDetails["duration"])
+        dur = td(seconds=duration)
+        return 1, dur
+
+    def edx_id_duration(self, edx_video_id):
+        """
+        Определяет длительность видео по предоставленному edx_video_id
+        Returns: 1, Длительность
+        или      0, текст ошибки
+        """
+        if not self._api_set_up():
+            return 0, _("Can't check edx video id: no api")
+
+        from openedx.core.djangoapps.video_evms.api import get_video_info
+        video = get_video_info(edx_video_id)
+        if not video:
+            return 0, _("No video for this edx_video_id:{}".format(edx_video_id))
+        temp = video.get("duration", _("Error: didn't get duration from server"))
+        dur = td(seconds=int(float(temp)))
+        return 1, dur
+
+    def _api_set_up(self):
+        try:
+            from openedx.core.djangoapps.video_evms.api import get_video_info
+        except ImportError:
+            return 0
+        return 1
+
+    def _youtube_time_expand(self, duration):
+        timeunits = {
+            'w': 604800,
+            'd': 86400,
+            'h': 3600,
+            'm': 60,
+            's': 1,
+        }
+        duration = duration.lower()
+
+        secs = 0
+        value = ''
+        for c in duration:
+            if c.isdigit():
+                value += c
+                continue
+            if c in timeunits:
+                secs += int(value) * timeunits[c]
+            value = ''
+        return secs
+
+    def format_timdelta(self,tdobj):
+        s = tdobj.total_seconds()
+        return u"{:.0f}:{:.0f}:{:.0f}".format(s // 3600, s % 3600 // 60, s % 60)
+
+
+class CourseValid(VideoMixin):
     """Проверка сценариев и формирование логов"""
 
     def __init__(self, request, course_key_string):
@@ -22,18 +111,23 @@ class CourseValid():
         self.store = modulestore()
         self.course_key = CourseKey.from_string(course_key_string)
         self.items = self.store.get_items(self.course_key)
-        self.root, self.edges = build_items_tree(self.items)
+        self.path_saved_reports = path_saved_reports(course_key_string)
         self.reports = []
-
 
     def validate(self):
         """Запуск всех сценариев проверок"""
+        try:
+            import edxval.api as edxval_api
+            val_profiles = ["youtube", "desktop_webm", "desktop_mp4"]
+            print(edxval_api.get_urls_for_profiles("optics-001-57i7fzxh8s", val_profiles))
+        except ImportError:
+            print("Import Error")
+
         scenarios = [
-            "video", "grade", "special_exams","advanced_modules",
+            "grade", "special_exams","advanced_modules",
             "group", "xmodule",
             "cohorts", "proctoring", "dates",
-            "group_visibility", "response_types",
-            
+            "group_visibility", "response_types", "video",
         ]
         results = []
         for sc in scenarios:
@@ -47,7 +141,6 @@ class CourseValid():
                     results.append(report)
         self.reports = results
         self.write_down_reports()
-
 
     def get_sections_for_rendering(self):
         sections = []
@@ -69,13 +162,15 @@ class CourseValid():
 
     def write_down_reports(self):
         try:
-            if not os.path.exists(PATH_SAVED_REPORTS):
-                os.makedirs(PATH_SAVED_REPORTS)
             name_parts = [str(self.course_key), str(self.request.user.username), str(datetime.now()).replace(" ","_")]
-            report_name = PATH_SAVED_REPORTS + "__".join(name_parts)+".csv"
+            report_name = "__".join(name_parts)+".csv"
+            if not os.path.exists(self.path_saved_reports):
+                logging.warning("Report '{}' was not saved: no such directory '{}'".format(report_name, self.path_saved_reports))
+            report_absolute_name = self.path_saved_reports + report_name
+
             field_names = Report._fields
 
-            dicts_to_csv([r._asdict() for r in self.reports], field_names, report_name)
+            dicts_to_csv([r._asdict() for r in self.reports], field_names, report_absolute_name)
             """"
             Second way to create report. Performance relation for both methods is unknown
             with open(report_name,"w") as file:
@@ -84,7 +179,8 @@ class CourseValid():
                 writer.writeheader()
                 writer.writerows(reports)
             """
-            logging.info("Report is saved:{}".format(report_name))
+
+            logging.info("Report is saved:{}".format(report_absolute_name))
 
         except Exception as e:
             r = Report(name=_("This report was not saved!"),
@@ -120,6 +216,7 @@ class CourseValid():
         else:
             logging.warning(mes)
 
+    @timeit
     def val_video(self):
         """
         Проверка видео: наличие ссылки на YouTube либо edx_video_id.
@@ -130,7 +227,7 @@ class CourseValid():
         items = self.items
         video_items = [i for i in items if i.category == "video"]
         video_strs = []
-        report = []
+        warnings = []
 
         chapter_video_dict = dict()
         get_chapter = lambda x: x.get_parent().get_parent().get_parent()
@@ -150,6 +247,11 @@ class CourseValid():
         total = timedelta()
         wrap_valmark = lambda s: unicode("<div class='valmark'>"+ s + "</div>")
         chap_strs = []
+        #Проверка наличия апи - если его нет, то не надо для каждого видео стучать в evms
+        api_found = self._api_set_up()
+
+        if not api_found:
+            warnings.append(_("Api is not set up. Contact your administrator"))
         for chap in chapter_objects:
             chap_total = timedelta()
             chap_key = chap.display_name
@@ -160,40 +262,42 @@ class CourseValid():
                 if not (v.youtube_id_1_0) and not (v.edx_video_id):
                     mes = _("No source for video '{name}' in '{vertical}' ").\
                         format(name=v.display_name, vertical=v.get_parent().display_name)
-                    report.append(mes)
+                    warnings.append(mes)
 
                 if v.youtube_id_1_0:
-                    success, cur_mes = youtube_duration(v.youtube_id_1_0)
+                    success, cur_mes = self.youtube_duration(v.youtube_id_1_0)
                     if not success:
-                        report.append(cur_mes)
+                        warnings.append(cur_mes)
                     mes = cur_mes
 
                 if v.edx_video_id:
-                    success, cur_mes = edx_id_duration(v.edx_video_id)
-                    if not success:
-                        report.append(cur_mes)
-                    mes = cur_mes
+                    if api_found:
+                        success, cur_mes = self.edx_id_duration(v.edx_video_id)
+                        if not success:
+                            warnings.append(cur_mes)
+                        mes = cur_mes
 
                 if success:
-                    total += mes
+                    counted_time = mes
+                    total += counted_time
                     chap_total += mes
                     if mes>timedelta(seconds=MAX_VIDEO_DURATION):
-                        report.append(_("Video {} is longer than 3600 secs").format(v.display_name))
+                        warnings.append(_("Video {} is longer than 3600 secs").format(v.display_name))
 
                 full_chapter_strs.append([v.display_name, unicode(mes)])
             full_chapter_strs.insert(0, [wrap_valmark(chap_key),
-                                        wrap_valmark(format_timdelta(chap_total))])
+                                        wrap_valmark(self.format_timdelta(chap_total))])
             video_strs.extend(full_chapter_strs)
             chap_strs.append([chap_key,
-                                 format_timdelta(chap_total)
+                                 self.format_timdelta(chap_total)
                                  ])
 
-        head = [_("Video name"), _("Video duration(sum: {})").format(format_timdelta(total))]
+        head = [_("Video name"), _("Video duration(sum: {})").format(self.format_timdelta(total))]
         head_chapter = [_("Chapter name"), _("Chapter summary video time")]
         results_full = Report(name=_("Video full"),
             head=head,
             body=video_strs,
-            warnings=report,
+            warnings=warnings,
             )
         results_short = Report(name=_("Video short"),
             head=head_chapter,
@@ -318,6 +422,7 @@ class CourseValid():
             )
         return results
 
+    @timeit
     def val_dates(self):
         """
         Проверка дат:
@@ -519,7 +624,7 @@ class CourseValid():
 
     def val_special_exams(self):
         sequentials = [i for i in self.items if i.category=='sequential']
-        special_exams = [i for i in sequentials if check_special_exam(i)]
+        special_exams = [i for i in sequentials if self._check_special_exam(i)]
         head = [_("Exam name"),_("Exam chapter"),_("Grade name"), _("Start date"),
                   _("Duration limit"), _("Due date"), _("Is proctored exam"),
                   ]
@@ -530,7 +635,7 @@ class CourseValid():
             grade = unicode(se.format)
             start = str(se.start)
             if se.is_time_limited:
-                duration = format_timdelta(timedelta(minutes=se.default_time_limit_minutes))
+                duration = self.format_timdelta(timedelta(minutes=se.default_time_limit_minutes))
             else:
                 duration = 'None'
             due_date = str(se.due)
@@ -543,4 +648,17 @@ class CourseValid():
                       warnings=[]
                       )
 
-
+    def _check_special_exam(self, seq):
+        """
+        Проверяет является ли объект seq специальным экзаменом,
+        т.е. верно ли хотя бы одно поле
+        :param seq:
+        :return:
+        """
+        fields = ['is_entrance_exam',
+                  'is_practice_exame',
+                  'is_proctored_exam',
+                  'is_time_limited'
+                  ]
+        answ = sum([getattr(seq, y, False) for y in fields])
+        return answ
