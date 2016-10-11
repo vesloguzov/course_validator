@@ -5,6 +5,7 @@ import urllib
 from collections import namedtuple
 import os
 from django.utils.translation import ugettext as _
+import codecs
 
 Report = namedtuple("Report", ["name", "head", "body", "warnings"])
 
@@ -13,7 +14,7 @@ def build_items_tree(items):
     """Построение дерева курса с корнем в итеме с category='course'"""
     course_root = None
     for num, i in enumerate(items):
-        if i.category=="course":
+        if i.category == "course":
             course_root = num
     if course_root is None:
         raise ValueError(_("No course root in {}").format([i.category for i in items]))
@@ -44,6 +45,7 @@ def _print_all(item):
         except Exception as e:
             print(at, e.message)
 
+
 def map_to_utf8(d):
     # iterate over the key/values pairings
     n = dict()
@@ -53,14 +55,34 @@ def map_to_utf8(d):
     return n
 
 
-def dicts_to_csv(dict_datas, fields, path, delim=','):
+def _unicodize(item):
+    itemn = item
+    try:
+        if isinstance(item, str) or isinstance(item, unicode):
+            try:
+                itemn = unicode(item, encoding="utf-8")
+            except TypeError:
+                itemn = item
+        elif isinstance(item, dict):
+            itemn = dict()
+            for k in item.keys():
+                itemn[k] = _unicodize(item[k])
+        elif isinstance(item, list):
+            itemn = list(_unicodize(k) for k in item)
+
+    except Exception as e:
+        print("!", e, item)
+    return itemn
+
+
+def dicts_to_csv(dict_datas, fields, path, delim=u'\t'):
     delim = unicode(delim)
-    with open(path, "w") as file:
-        header = u",".join(fields)
+    with codecs.open(path, "w", encoding="utf-8") as file:
+        header = delim.join(fields)
         file.write(header.encode("utf8") + "\n")
         for pr in dict_datas:
-            line = delim.join([str(json.dumps(unicode(pr[k]))) for k in fields])
-            file.write(line.encode("utf8") + "\n")
+            line = delim.join((json.dumps(_unicodize(pr[k]), ensure_ascii=False)) for k in fields)
+            file.write(line + "\n")
 
 
 def last_course_validation(course_key, path_saved_reports):
@@ -73,10 +95,21 @@ def last_course_validation(course_key, path_saved_reports):
     reporter_name, report_date = [], []
     today = datetime.datetime.now()
     for r in this_course_reports:
-        _, name, date = r.strip(".csv").split("__")
-        date_obj = datetime.datetime.strptime(date, "%Y-%m-%d_%H:%M:%S.%f")
-        reporter_name.append(name)
-        report_date.append(date_obj)
+        try:
+            current_report = r.split('.')
+            if len(current_report) != 2:
+                continue
+            if current_report[1] != 'csv':
+                continue
+            current_report = current_report[0]
+            _, name, date = current_report.split("__")
+            date_obj = datetime.datetime.strptime(date, "%Y-%m-%d_%H:%M:%S.%f")
+            reporter_name.append(name)
+            report_date.append(date_obj)
+        except ValueError:
+            pass
+    if not report_date:
+        return None, None
     deltas = [today - d for d in report_date]
     ind = deltas.index(min(deltas))
     return reporter_name[ind], report_date[ind]
@@ -91,19 +124,18 @@ def path_saved_reports(course_key_string):
                                               course_run=course_run
                                               )
 
+
 import time
 
-def timeit(method):
 
+def timeit(method):
     def timed(*args, **kw):
         ts = time.time()
         result = method(*args, **kw)
         te = time.time()
 
         print '%r (%r, %r) %2.2f sec' % \
-              (method.__name__, args, kw, te-ts)
+              (method.__name__, args, kw, te - ts)
         return result
 
     return timed
-
-

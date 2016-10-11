@@ -119,9 +119,8 @@ class CourseValid(VideoMixin):
         try:
             import edxval.api as edxval_api
             val_profiles = ["youtube", "desktop_webm", "desktop_mp4"]
-            print(edxval_api.get_urls_for_profiles("optics-001-57i7fzxh8s", val_profiles))
         except ImportError:
-            print("Import Error")
+            logging.ERROR("Course validator: no api for video")
 
         scenarios = [
             "grade", "special_exams","advanced_modules",
@@ -216,7 +215,6 @@ class CourseValid(VideoMixin):
         else:
             logging.warning(mes)
 
-    @timeit
     def val_video(self):
         """
         Проверка видео: наличие ссылки на YouTube либо edx_video_id.
@@ -422,7 +420,6 @@ class CourseValid(VideoMixin):
             )
         return results
 
-    @timeit
     def val_dates(self):
         """
         Проверка дат:
