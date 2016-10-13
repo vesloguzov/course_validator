@@ -9,7 +9,7 @@ from edxmako.shortcuts import render_to_response
 from django.views.decorators.http import require_GET
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.http import HttpResponse, JsonResponse
-from .utils import last_course_validation, path_saved_reports
+from .utils import last_course_validation, get_path_saved_reports
 
 
 __all__ = ["course_validator_handler"]
@@ -39,22 +39,24 @@ def course_validator_handler(request, course_key_string=None):
 
     if 'exec' in requested_format:
         CV = CourseValid(request, course_key_string)
-        CV.validate()
-        CV.send_log()
-        context['sections'] = CV.get_sections_for_rendering()
-
+        data = None
+        if request.GET["type"] == u'new-validation':
+            data = CV.get_new_validation()
+        elif request.GET["type"] == u'previous-validation':
+            data = CV.get_old_validation()
+        context['sections'] = data
         res = render_to_response("results.html", context)
         return JsonResponse({"html":str(res.content)})
 
+    path = get_path_saved_reports(course_key_string)
+    last_check = last_course_validation(course_key, path)
 
-    path = path_saved_reports(course_key_string)
-    last_check_user, last_check_date = last_course_validation(course_key, path)
-    if last_check_user and last_check_date:
+    if last_check:
+        last_check_user, last_check_date = last_check["username"], last_check["date"]
         context.update({
         "last_check_date": str(last_check_date.date()),
         "last_check_user": last_check_user,
     })
-
     context.update( {
         "context_course": course_module,
         "course_key_string": course_key_string,

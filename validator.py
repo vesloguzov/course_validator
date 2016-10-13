@@ -1,109 +1,22 @@
 # -*- coding: utf-8 -*-
-from collections import Counter
-from contentstore.course_group_config import GroupConfiguration
 import json
 import logging
-from opaque_keys.edx.keys import CourseKey
-from openedx.core.djangoapps.course_groups.cohorts import get_course_cohorts, get_course_cohort_settings
-from xmodule.modulestore.django import modulestore
-from models.settings.course_grading import CourseGradingModel
+from collections import Counter
+
+from contentstore.course_group_config import GroupConfiguration
 from django.utils.translation import ugettext as _
-import os
+from models.settings.course_grading import CourseGradingModel
+from opaque_keys.edx.keys import CourseKey
+from xmodule.modulestore.django import modulestore
+
+from course_validator.mixins import VideoMixin, ReportIOMixin
+from openedx.core.djangoapps.course_groups.cohorts import get_course_cohorts, get_course_cohort_settings
 from .settings import *
-from .utils import Report, dicts_to_csv
-from .utils import timeit, path_saved_reports
-import urllib
-from datetime import timedelta as td
+from .utils import Report, get_path_saved_reports, last_course_validation
 
 
-class VideoMixin():
-    """
-    Сюда вынесены меоды касающиеся работы с видео
-    """
 
-    def youtube_duration(self, video_id):
-        """
-        ATTENTION! В функции используется youtube_api. Необходим
-        api_key. Для получения api_key:
-        1.Зарегистрироваться на console.developers.google.com
-        2. на главной YouTube API >YouTube Data API
-        3. Включить Youtube Api
-        4. В учетных данных (Credentials) взять ключ
-
-        Определяет длительность видео с YouTube по video_id, гда
-        video_id это часть url: https://youtu.be/$video_id$
-        Returns: 1, Длительность
-        или      0, текст ошибки
-        """
-        api_key = "AIzaSyCnxGGegKJ1_R-cEVseGUrAcFff5VHXgZ0"
-        searchUrl = "https://www.googleapis.com/youtube/v3/videos?id=" + video_id + "&key=" + api_key + "&part=contentDetails"
-        try:
-            response = urllib.urlopen(searchUrl).read()
-        except IOError:
-            return 0, _("No response from server.")
-        data = json.loads(response)
-        if data.get("error", False):
-            return 0, _("Error occured while video duration check:{}").format(data["error"])
-        all_data = data["items"]
-        if not len(all_data):
-            return 0, _("Can't find video with such id on youtube.")
-
-        contentDetails = all_data[0]["contentDetails"]
-        duration = self._youtube_time_expand(contentDetails["duration"])
-        dur = td(seconds=duration)
-        return 1, dur
-
-    def edx_id_duration(self, edx_video_id):
-        """
-        Определяет длительность видео по предоставленному edx_video_id
-        Returns: 1, Длительность
-        или      0, текст ошибки
-        """
-        if not self._api_set_up():
-            return 0, _("Can't check edx video id: no api")
-
-        from openedx.core.djangoapps.video_evms.api import get_video_info
-        video = get_video_info(edx_video_id)
-        if not video:
-            return 0, _("No video for this edx_video_id:{}".format(edx_video_id))
-        temp = video.get("duration", _("Error: didn't get duration from server"))
-        dur = td(seconds=int(float(temp)))
-        return 1, dur
-
-    def _api_set_up(self):
-        try:
-            from openedx.core.djangoapps.video_evms.api import get_video_info
-        except ImportError:
-            return 0
-        return 1
-
-    def _youtube_time_expand(self, duration):
-        timeunits = {
-            'w': 604800,
-            'd': 86400,
-            'h': 3600,
-            'm': 60,
-            's': 1,
-        }
-        duration = duration.lower()
-
-        secs = 0
-        value = ''
-        for c in duration:
-            if c.isdigit():
-                value += c
-                continue
-            if c in timeunits:
-                secs += int(value) * timeunits[c]
-            value = ''
-        return secs
-
-    def format_timdelta(self,tdobj):
-        s = tdobj.total_seconds()
-        return u"{:.0f}:{:.0f}:{:.0f}".format(s // 3600, s % 3600 // 60, s % 60)
-
-
-class CourseValid(VideoMixin):
+class CourseValid(VideoMixin, ReportIOMixin):
     """Проверка сценариев и формирование логов"""
 
     def __init__(self, request, course_key_string):
@@ -111,16 +24,28 @@ class CourseValid(VideoMixin):
         self.store = modulestore()
         self.course_key = CourseKey.from_string(course_key_string)
         self.items = self.store.get_items(self.course_key)
-        self.path_saved_reports = path_saved_reports(course_key_string)
+        self.path_saved_reports = get_path_saved_reports(course_key_string)
         self.reports = []
 
-    def validate(self):
+    def get_new_validation(self):
+        self._validate_all()
+        self.send_log()
+        return self.get_sections_for_rendering()
+
+    def get_old_validation(self):
+        lcv = last_course_validation(self.course_key, self.path_saved_reports)
+        path = lcv["path"]
+        self.reports = self.read_validation(path)
+        return self.get_sections_for_rendering()
+
+
+    def _validate_all(self):
         """Запуск всех сценариев проверок"""
         try:
             import edxval.api as edxval_api
             val_profiles = ["youtube", "desktop_webm", "desktop_mp4"]
         except ImportError:
-            logging.ERROR("Course validator: no api for video")
+            logging.error("Course validator: no api for video")
 
         scenarios = [
             "grade", "special_exams","advanced_modules",
@@ -139,7 +64,8 @@ class CourseValid(VideoMixin):
                 else:
                     results.append(report)
         self.reports = results
-        self.write_down_reports()
+        self.write_validation(self.reports)
+
 
     def get_sections_for_rendering(self):
         sections = []
@@ -158,35 +84,6 @@ class CourseValid(VideoMixin):
                 sec["warnings"] = r.warnings
             sections.append(sec)
         return sections
-
-    def write_down_reports(self):
-        try:
-            name_parts = [str(self.course_key), str(self.request.user.username), str(datetime.now()).replace(" ","_")]
-            report_name = "__".join(name_parts)+".csv"
-            if not os.path.exists(self.path_saved_reports):
-                logging.warning("Report '{}' was not saved: no such directory '{}'".format(report_name, self.path_saved_reports))
-            report_absolute_name = self.path_saved_reports + report_name
-
-            field_names = Report._fields
-
-            dicts_to_csv([r._asdict() for r in self.reports], field_names, report_absolute_name)
-            """"
-            Second way to create report. Performance relation for both methods is unknown
-            with open(report_name,"w") as file:
-                writer = csv.DictWriter(file, fieldnames=field_names)
-                reports = [map_to_utf8(r._asdict()) for r in self.reports]
-                writer.writeheader()
-                writer.writerows(reports)
-            """
-
-            logging.info("Report is saved:{}".format(report_absolute_name))
-
-        except Exception as e:
-            r = Report(name=_("This report was not saved!"),
-                       head=[],
-                       body=[],
-                       warnings=[str(e)])
-            self.reports.append(r)
 
     def send_log(self):
         """
@@ -434,6 +331,8 @@ class CourseValid(VideoMixin):
             parent = child.get_parent()
             if not parent:
                 continue
+            if not parent.start or not child.start:
+                print("!?",parent.display_name, parent.start, child.display_name, child.start)
             if parent.start > child.start:
                 mes = _("'{n1}' block has start date {d1}, but his parent '{n2}' has later start date {d2}").\
                     format(n1=child.display_name, d1=child.start,

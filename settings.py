@@ -14,7 +14,6 @@ COUNT_NLY_CAT = ["problem",
             ]
 # Путь где сохраняются отчеты. Может, но не обязана содержать {organization}, {course_number}, {course_run}
 PATH_SAVED_REPORTS_TEMPLATE = "/edx/var/edxapp/data/{organization}/{course_number}/{course_run}/"
-
 # Настройка момента, относительно которого проводится проверка дат
 # 2 - послезавтра, 1- завтра, 0 - сегодня, -1 -вчера
 DELTA_DATE_CHECK = 1
