@@ -33,17 +33,24 @@ def course_validator_handler(request, course_key_string=None):
     requested_format = request.GET.get('_accept', request.META.get('HTTP_ACCEPT', 'text/html'))
 
     execute_url = reverse_validator_course_url(course_key)
-    execute_url += "?_accept=exec"
+    #execute_url += "?_accept=exec"
     context = dict()
-
-    if 'exec' in requested_format:
+    print("Got it!")
+    print(request.method)
+    if request.method == 'POST':
         CV = CourseValid(request, course_key_string)
         data = None
-        if request.GET["type"] == u'new-validation':
-            data = CV.get_new_validation()
-        elif request.GET["type"] == u'previous-validation':
+        form_data = dict(request.POST)
+        print(form_data)
+        type_ = form_data.pop("type")[0]
+        print(type_, type_ == u'new-validation')
+        if type_ == u'new-validation':
+            print("here!")
+            data = CV.get_new_validation(form_data)
+        elif type_ == u'previous-validation':
             data = CV.get_old_validation()
         context['sections'] = data
+
         res = render_to_response("results.html", context)
         return JsonResponse({"html":str(res.content)})
 

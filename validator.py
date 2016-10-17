@@ -41,8 +41,10 @@ class CourseValid(VideoMixin, ReportIOMixin):
         self.path_saved_reports = get_path_saved_reports(course_key_string)
         self.reports = []
 
-    def get_new_validation(self):
-        self._validate_scenarios()
+    def get_new_validation(self, form_data):
+        print("!",form_data)
+        scenarios = [s for s in form_data.keys() if s in CourseValid.scenarios_names_dict]
+        self._validate_scenarios(scenarios)
         self.send_log()
         return self.get_sections_for_rendering()
 
@@ -54,6 +56,7 @@ class CourseValid(VideoMixin, ReportIOMixin):
 
     def _validate_scenarios(self, scenarios=None):
         """Запуск всех сценариев проверок"""
+        print(scenarios)
         try:
             import edxval.api as edxval_api
             val_profiles = ["youtube", "desktop_webm", "desktop_mp4"]
@@ -61,9 +64,9 @@ class CourseValid(VideoMixin, ReportIOMixin):
             logging.error("Course validator: no api for video")
 
         results = []
-        if scenarios is None:
-            scenarios = CourseValid.scenarios_names_dict.keys()
-        scenarios = [s for s in scenarios if s in CourseValid.scenarios_names_dict.keys()]
+        #if scenarios is None:
+        #    scenarios = CourseValid.scenarios_names_dict.keys()
+        #scenarios = [s for s in scenarios if s in CourseValid.scenarios_names_dict.keys()]
 
         for sc in scenarios:
             val_name = "val_{}".format(sc)

@@ -84,12 +84,13 @@
     require(["jquery"], function ($) {
       $(document).ready(function () {
 
-        $(".mybutton").click(function (event) {
+        $(".button-previous-validation").click(function (event) {
           var dataurl = $("#validreport").attr('data-load');
           $.ajax({
-            type: 'GET',
+            type: 'POST',
             url: dataurl,
-            data:{'type':btn_type},
+            data:{'type':'previous-validation'},
+
             beforeSend: function() {
               $('#loading').show();
             },
@@ -102,10 +103,36 @@
             }
           });
           return false;
-        })
+        });
 
-      })
-    })
+
+
+      });
+
+    });
+    function form_new_validation(){
+          var dataurl = $("#validreport").attr('data-load');
+          var msg   = $('#form-new-validation').serialize();
+          //msg['type'] = 'new-validation';
+          msg += "&type=new-validation";
+          $.ajax({
+            type: 'POST',
+            url: dataurl,
+            data:msg, //{'type':'new-validation'},
+            beforeSend: function() {
+              $('#loading').show();
+            },
+            complete: function(){
+              $('#loading').hide();
+            },
+            success: function(data){
+              $("#results").html(data['html']);
+              $("#loading").css('color','red');
+            }
+          });
+          return false;
+        }
+
   </script>
 </%block>
 
@@ -118,20 +145,20 @@
         </p>
 
 
-
-    <form method="POST" id="formx" action="javascript:void(null);" onsubmit="call()">
+    <form method="POST" id="form-new-validation" name="form-new-validation" action="javascript:void(null);" >
         <h2 class="title">${_("Validation")}</h2>
-        % if last_check_date and last_check_user:
-                % endif
-        <a href="#" class="mybutton button-new-validation" id="new-validation" title=${_("Execute validation")}>
-        <span>
-            ${_("Validate Course")}
-        </span>
-        </a>
+        % for option in validate_options:
+            <label for=${option}> ${validate_options[option]}:</label>
+            <input name=${option}  type="checkbox" checked>
+            <br>
+        % endfor
+
+        <input value=${_("Validate Course")} type="submit" onclick="form_new_validation()" >
     </form>
 
+
     % if last_check_date and last_check_user:
-        <form method="GET" class="previous-validation" action="javascript:void(null);" onsubmit="call()">
+        <form method="POST" id="form-previous-validation" action="javascript:void(null);" onsubmit="call()()">
             <p>
                 ${_("Last check was done at {date} by {user}").format(date=last_check_date, user=last_check_user)}
             </p>
@@ -146,31 +173,6 @@
             ${_("This course have never been checked.")}
         </p>
     % endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
