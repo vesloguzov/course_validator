@@ -225,7 +225,7 @@ class XmoduleValTest(BaseValTest):
         v = ItemFactory.create(category="vertical", parent_location=self.sequential.location)
         ItemFactory.create(category="problem", parent_location=v.location)
         CV = CourseValid(None, str(self.course_key))
-        rep = CV.val_xmodule()
+        rep = CV.val_module()
         print(rep)
         self.assertEqual(rep.warnings, [])
 
@@ -233,7 +233,7 @@ class XmoduleValTest(BaseValTest):
         """Проверяется наличие 2 предупреждений при 2 пустых курсах"""
         ItemFactory.create(category="sequential", parent_location=self.chapter.location)
         CV = CourseValid(None, str(self.course_key))
-        rep = CV.val_xmodule()
+        rep = CV.val_module()
         print(rep)
         self.assertEqual(len(rep.warnings), 2)
 
@@ -250,7 +250,7 @@ class XmoduleValTest(BaseValTest):
 
         ItemFactory.create(category="vertical", parent_location=self.sequential.location)
         CV = CourseValid(None, str(self.course_key))
-        rep = CV.val_xmodule()
+        rep = CV.val_module()
         print(rep)
         for b in rep.body:
             type_, count_in_course = b.split(' - ')

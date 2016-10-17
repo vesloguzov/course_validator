@@ -1,0 +1,26 @@
+<%block name="validate_form">
+    % if last_check_date and last_check_user:
+        <p>
+            ${_("Last check was done at {date} by {user}").format(date=last_check_date, user=last_check_user)}
+        </p>
+    % else:
+        <p>
+            ${_("This course have never been checked.")}
+        </p>
+    % endif
+
+    <h2 class="title">${_("Validation")}</h2>
+    % if last_check_date and last_check_user:
+        <a href="#" class="mybutton button-previous-validation" id="previous-validation"
+           title=${_("Load previous validation")}>
+            <span> ${_("Load previous validation")} </span>
+        </a>
+    % endif
+
+
+    <a href="#" class="mybutton button-new-validation" id="new-validation" title=${_("Execute validation")}>
+    <span>
+        ${_("Validate Course")}
+    </span>
+    </a>
+</%block>

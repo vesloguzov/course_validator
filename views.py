@@ -23,11 +23,10 @@ def reverse_validator_course_url(course_key):
 
 @login_required
 @ensure_csrf_cookie
-@require_GET
 def course_validator_handler(request, course_key_string=None):
     """Обработчик url на проверку курса"""
-    if request.method != 'GET':
-        return redirect(reverse('course_handler', course_key_string))
+    #if request.method != 'GET':
+        #return redirect(reverse('course_handler', course_key_string))
     course_key = CourseKey.from_string(course_key_string)
     course_module = modulestore().get_course(course_key)
 
@@ -54,12 +53,13 @@ def course_validator_handler(request, course_key_string=None):
     if last_check:
         last_check_user, last_check_date = last_check["username"], last_check["date"]
         context.update({
-        "last_check_date": str(last_check_date.date()),
-        "last_check_user": last_check_user,
-    })
-    context.update( {
+            "last_check_date": str(last_check_date.date()),
+            "last_check_user": last_check_user,
+        })
+    context.update({
         "context_course": course_module,
         "course_key_string": course_key_string,
         "validate_url": execute_url,
+        "validate_options":CourseValid.scenarios_names_dict
     })
     return render_to_response("validator.html", context)

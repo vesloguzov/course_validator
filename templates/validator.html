@@ -86,7 +86,6 @@
 
         $(".mybutton").click(function (event) {
           var dataurl = $("#validreport").attr('data-load');
-          var btn_type = this.id;
           $.ajax({
             type: 'GET',
             url: dataurl,
@@ -114,34 +113,67 @@
   <section class="content">
     <div class="introduction">
       <h2 class="title">${_("About Course Validation")}</h2>
-      <div>
         <p>
           ${_("This tool is designed to check course before publishing. Different inspections and checks are being performed and then the report will be formed, shown to you and saved. Perhaps validation will take a little time.")}
         </p>
-      </div>
 
-      % if last_check_date and last_check_user:
+
+
+    <form method="POST" id="formx" action="javascript:void(null);" onsubmit="call()">
+        <h2 class="title">${_("Validation")}</h2>
+        % if last_check_date and last_check_user:
+                % endif
+        <a href="#" class="mybutton button-new-validation" id="new-validation" title=${_("Execute validation")}>
+        <span>
+            ${_("Validate Course")}
+        </span>
+        </a>
+    </form>
+
+    % if last_check_date and last_check_user:
+        <form method="GET" class="previous-validation" action="javascript:void(null);" onsubmit="call()">
+            <p>
+                ${_("Last check was done at {date} by {user}").format(date=last_check_date, user=last_check_user)}
+            </p>
+
+            <a href="#" class="mybutton button-previous-validation" id="previous-validation"
+               title=${_("Load previous validation")}>
+                <span> ${_("Load previous validation")} </span>
+            </a>
+        </form>
+    % else:
         <p>
-          ${_("Last check was done at {date} by {user}").format(date=last_check_date, user=last_check_user)}
+            ${_("This course have never been checked.")}
         </p>
-      % else:
-        <p>
-          ${_("This course have never been checked.")}
-        </p>
-      % endif
+    % endif
 
-      <h2 class="title">${_("Validation")}</h2>
-      <a href="#" class="mybutton button-new-validation" id="new-validation" title=${_("Execute validation")}>
-                    <span>
-                      ${_("Validate Course")}
-                    </span>
-      </a>
 
-      % if last_check_date and last_check_user:
-        <a href="#" class="mybutton button-previous-validation" id="previous-validation" title=${_("Load previous validation")}>
-          <span> ${_("Load previous validation")} </span>
-      </a>
-      % endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     </div>
 
     <div id="validreport" data-load="${validate_url}">

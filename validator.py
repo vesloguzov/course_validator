@@ -15,9 +15,23 @@ from .settings import *
 from .utils import Report, get_path_saved_reports, last_course_validation
 
 
-
 class CourseValid(VideoMixin, ReportIOMixin):
     """Проверка сценариев и формирование логов"""
+
+    scenarios_names_dict = {
+            "grade":_("Grade"),
+            "special_exams":_("Special exams"),
+            "advanced_modules": _("Advanced Modules"),
+            "group":_("Group"),
+            "module":_("Module"),
+            "cohorts":_(" Cohorts "),
+            "proctoring":_("Proctoring"),
+            "dates":_("Dates"),
+            "items_visibility_by_group":_("Items visibility by group"),
+            "response_types":_("Response types"),
+            "video":_("Video full"),
+        }
+
 
     def __init__(self, request, course_key_string):
         self.request = request
@@ -28,7 +42,7 @@ class CourseValid(VideoMixin, ReportIOMixin):
         self.reports = []
 
     def get_new_validation(self):
-        self._validate_all()
+        self._validate_scenarios()
         self.send_log()
         return self.get_sections_for_rendering()
 
@@ -38,8 +52,7 @@ class CourseValid(VideoMixin, ReportIOMixin):
         self.reports = self.read_validation(path)
         return self.get_sections_for_rendering()
 
-
-    def _validate_all(self):
+    def _validate_scenarios(self, scenarios=None):
         """Запуск всех сценариев проверок"""
         try:
             import edxval.api as edxval_api
@@ -47,17 +60,17 @@ class CourseValid(VideoMixin, ReportIOMixin):
         except ImportError:
             logging.error("Course validator: no api for video")
 
-        scenarios = [
-            "grade", "special_exams","advanced_modules",
-            "group", "xmodule",
-            "cohorts", "proctoring", "dates",
-            "group_visibility", "response_types", "video",
-        ]
         results = []
+        if scenarios is None:
+            scenarios = CourseValid.scenarios_names_dict.keys()
+        scenarios = [s for s in scenarios if s in CourseValid.scenarios_names_dict.keys()]
+
         for sc in scenarios:
             val_name = "val_{}".format(sc)
             validation = getattr(self, val_name)
+            print(val_name)
             report = validation()
+            print(report)
             if report is not None:
                 if isinstance(report, list):
                     results.extend(report)
@@ -65,7 +78,6 @@ class CourseValid(VideoMixin, ReportIOMixin):
                     results.append(report)
         self.reports = results
         self.write_validation(self.reports)
-
 
     def get_sections_for_rendering(self):
         sections = []
@@ -273,7 +285,7 @@ class CourseValid(VideoMixin, ReportIOMixin):
             )
         return results
 
-    def val_xmodule(self):
+    def val_module(self):
         """Проверка отсутствия пустых блоков, подсчет количества каждой категории блоков"""
         all_cat_dict = Counter([i.category for i in self.items])
         """
@@ -399,7 +411,7 @@ class CourseValid(VideoMixin, ReportIOMixin):
             )
         return result
 
-    def val_group_visibility(self):
+    def val_items_visibility_by_group(self):
         """Составление таблицы видимости элементов для групп"""
         with self.store.bulk_operations(self.course_key):
             course = self.store.get_course(self.course_key)
