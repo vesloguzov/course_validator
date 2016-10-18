@@ -12,7 +12,7 @@ from xmodule.modulestore.django import modulestore
 from course_validator.mixins import VideoMixin, ReportIOMixin
 from openedx.core.djangoapps.course_groups.cohorts import get_course_cohorts, get_course_cohort_settings
 from .settings import *
-from .utils import Report, get_path_saved_reports, last_course_validation
+from .utils import Report
 
 
 class CourseValid(VideoMixin, ReportIOMixin):
@@ -31,32 +31,33 @@ class CourseValid(VideoMixin, ReportIOMixin):
             "response_types":_("Response types"),
             "video":_("Video full"),
         }
-
+    costly_scenarios = [
+            "video",
+            "dates",
+        ]
 
     def __init__(self, request, course_key_string):
         self.request = request
         self.store = modulestore()
+        self.course_key_string = course_key_string
         self.course_key = CourseKey.from_string(course_key_string)
-        self.items = self.store.get_items(self.course_key)
-        self.path_saved_reports = get_path_saved_reports(course_key_string)
         self.reports = []
 
     def get_new_validation(self, form_data):
-        print("!",form_data)
+        self.items = self.store.get_items(self.course_key)
         scenarios = [s for s in form_data.keys() if s in CourseValid.scenarios_names_dict]
         self._validate_scenarios(scenarios)
         self.send_log()
         return self.get_sections_for_rendering()
 
-    def get_old_validation(self):
-        lcv = last_course_validation(self.course_key, self.path_saved_reports)
-        path = lcv["path"]
+    def get_old_validation(self, form_data):
+        readable = form_data["previous-report"][0]
+        path = self.get_path_for_readable(readable)
         self.reports = self.read_validation(path)
         return self.get_sections_for_rendering()
 
     def _validate_scenarios(self, scenarios=None):
         """Запуск всех сценариев проверок"""
-        print(scenarios)
         try:
             import edxval.api as edxval_api
             val_profiles = ["youtube", "desktop_webm", "desktop_mp4"]
@@ -64,16 +65,11 @@ class CourseValid(VideoMixin, ReportIOMixin):
             logging.error("Course validator: no api for video")
 
         results = []
-        #if scenarios is None:
-        #    scenarios = CourseValid.scenarios_names_dict.keys()
-        #scenarios = [s for s in scenarios if s in CourseValid.scenarios_names_dict.keys()]
 
         for sc in scenarios:
             val_name = "val_{}".format(sc)
             validation = getattr(self, val_name)
-            print(val_name)
             report = validation()
-            print(report)
             if report is not None:
                 if isinstance(report, list):
                     results.extend(report)

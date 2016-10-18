@@ -1,191 +1,201 @@
 <%page expression_filter="h"/>
 <%inherit file="base.html" />
 <%!
-  from django.utils.translation import ugettext as _
-  from django.core.urlresolvers import reverse
-  from django.conf import settings
+    from django.utils.translation import ugettext as _
+    from django.core.urlresolvers import reverse
+    from django.conf import settings
 %>
 <%block name="title">
-  ${_("Course Validation")}
+    ${_("Course Validation")}
 </%block>
 
 <%block name="header_extras">
-  <style>
-     .button-previous-validation {
-        background-color:#66b93d;
-        color: #ffdd00;
-        display: inline-block;
-        font-weight: bold;
-        font-size: 25px;
-        padding: 15px;
-    }
+    <style>
+        .button-previous-validation {
+            background-color: #66b93d;
+            color: #ffdd00;
+            display: inline-block;
+            font-weight: bold;
+            font-size: 25px;
+            padding: 15px;
+        }
 
-    .button-new-validation {
-        background-color:#6699aa;
-        color: #ffddaa;
-        display: inline-block;
-        font-weight: bold;
-        font-size: 25px;
-        padding: 15px;
-    }
+        .passed .highlight {
+            color: #11aa44;
+        }
 
-    .passed .highlight {
-        color: #11aa44;
-    }
+        .failed .highlight {
+            color: #ff2200;
+        }
 
-    .failed .highlight {
-        color: #ff2200;
-    }
+        .mytable {
+            width: 100%;
+            border-spacing: 5px;
+            font-size: 18px;
+            margin: 10px;
+            text-align: left;
+            padding-bottom: 10px;
+        }
 
-    .mytable {
-        width: 100%;
-        border-spacing: 5px;
-        font-size: 18px;
-        margin: 10px;
-        text-align: left;
-        padding-bottom: 10px;
-    }
+        .form-options-table {
+            border-spacing: 5px;
+            font-size: 18px;
+            margin: 10px;
+            text-align: left;
+            padding-bottom: 10px;
+            border: 1px solid black;
+        }
 
-    .mytable-head {
-        font-size: 22px;
-    }
+        .form-options-table th {
+            border-bottom: 1px solid black;
+            border-top: 1px solid black;
+            text-align: center;
+            padding: 0 5px 0 5px;
+        }
 
-    .message {
-        font-size: 16px;
-    }
+        .mytable-head {
+            font-size: 22px;
+        }
 
-    .header {
-        font-size: 26px;
-    }
+        .message {
+            font-size: 16px;
+        }
 
-    .mypanel {
-        border-style: solid;
-        border-width: 1px;
-    }
-    .valmark{
-        font-size:20px;
-        font-weight: bold;
-    }
-    .myhidden{
-        visibility: hidden;
-    }
-    #loading{
-        display:  none;
-        font-size: 36px;
-        color: #6699aa;
-    }
+        .header {
+            font-size: 26px;
+        }
 
-  </style>
+        .mypanel {
+            border-style: solid;
+            border-width: 1px;
+        }
+
+        .valmark {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .myhidden {
+            visibility: hidden;
+        }
+
+        #loading {
+            display: none;
+            margin: 10px;
+            font-size: 36px;
+            color: #6699aa;
+        }
+
+    </style>
 </%block>
 
 
 <%block name="jsextra">
-  <script type="text/javascript">
-    require(["jquery"], function ($) {
-      $(document).ready(function () {
-
-        $(".button-previous-validation").click(function (event) {
-          var dataurl = $("#validreport").attr('data-load');
-          $.ajax({
-            type: 'POST',
-            url: dataurl,
-            data:{'type':'previous-validation'},
-
-            beforeSend: function() {
-              $('#loading').show();
-            },
-            complete: function(){
-              $('#loading').hide();
-            },
-            success: function(data){
-              $("#results").html(data['html']);
-              $("#loading").css('color','red');
-            }
-          });
-          return false;
+    <script type="text/javascript">
+        require(["jquery"], function ($) {
+            $(document).ready(function () {
+                $(".form-validation input[value=old-validation]").prop("checked", false);
+                $(".form-validation input[value=new-validation]").prop("checked", true);
+            });
         });
 
+        function form_new_validation() {
+            var dataurl = $("#validreport").attr('data-load');
+            var msg = $('#form-new-validation').serialize();
+            $.ajax({
+                type: 'POST',
+                url: dataurl,
+                data: msg,
+                beforeSend: function () {
+                    $('#loading').show();
+                    $('.form-validation fieldset.form-entirely').attr('disabled', true);
+                },
+                complete: function () {
+                    $('#loading').hide();
+                    $('.form-validation fieldset.form-entirely').attr('disabled', false);
 
-
-      });
-
-    });
-    function form_new_validation(){
-          var dataurl = $("#validreport").attr('data-load');
-          var msg   = $('#form-new-validation').serialize();
-          //msg['type'] = 'new-validation';
-          msg += "&type=new-validation";
-          $.ajax({
-            type: 'POST',
-            url: dataurl,
-            data:msg, //{'type':'new-validation'},
-            beforeSend: function() {
-              $('#loading').show();
-            },
-            complete: function(){
-              $('#loading').hide();
-            },
-            success: function(data){
-              $("#results").html(data['html']);
-              $("#loading").css('color','red');
-            }
-          });
-          return false;
+                },
+                success: function (data) {
+                    $("#results").html(data['html']);
+                }
+            });
+            return false;
         }
 
-  </script>
+        function type_of_form(chosen_radio) {
+            if (chosen_radio.value == "old-validation") {
+                $('.form-validation fieldset.new-validation-options').attr('disabled', true);
+                $('.form-validation select.old-validation-options').attr('disabled', false);
+            }
+            if (chosen_radio.value == "new-validation") {
+                $('.form-validation fieldset.new-validation-options').attr('disabled', false);
+                $('.form-validation select.old-validation-options').attr('disabled', true);
+            }
+        }
+    </script>
 </%block>
 
 <%block name="content">
-  <section class="content">
-    <div class="introduction">
-      <h2 class="title">${_("About Course Validation")}</h2>
-        <p>
-          ${_("This tool is designed to check course before publishing. Different inspections and checks are being performed and then the report will be formed, shown to you and saved. Perhaps validation will take a little time.")}
-        </p>
-
-
-    <form method="POST" id="form-new-validation" name="form-new-validation" action="javascript:void(null);" >
-        <h2 class="title">${_("Validation")}</h2>
-        % for option in validate_options:
-            <label for=${option}> ${validate_options[option]}:</label>
-            <input name=${option}  type="checkbox" checked>
-            <br>
-        % endfor
-
-        <input value=${_("Validate Course")} type="submit" onclick="form_new_validation()" >
-    </form>
-
-
-    % if last_check_date and last_check_user:
-        <form method="POST" id="form-previous-validation" action="javascript:void(null);" onsubmit="call()()">
+    <section class="content">
+        <div class="introduction">
+            <h2 class="title">${_("About Course Validation")}</h2>
             <p>
-                ${_("Last check was done at {date} by {user}").format(date=last_check_date, user=last_check_user)}
+                ${_("This tool is designed to check course before publishing. Different inspections and checks are being performed and then the report will be formed, shown to you and saved. Perhaps validation will take a little time.")}
             </p>
 
-            <a href="#" class="mybutton button-previous-validation" id="previous-validation"
-               title=${_("Load previous validation")}>
-                <span> ${_("Load previous validation")} </span>
-            </a>
-        </form>
-    % else:
-        <p>
-            ${_("This course have never been checked.")}
-        </p>
-    % endif
 
+            <form method="POST" class="form-validation" id="form-new-validation" name="form-new-validation"
+                  action="javascript:void(null);">
+                <fieldset class="form-entirely">
+                    <h2 class="title">${_("Validation")}</h2>
+                    <input name="type-of-form" type="radio" value="new-validation" checked
+                           onclick="type_of_form(this)">${_("Proceed new validation")}<br>
+                    % if saved_reports:
+                        <input name="type-of-form" type="radio" value="old-validation"
+                               onclick="type_of_form(this)">${_("Load previous validation")}<br>
+                    % else:
+                        <p>
+                            ${_("This course have never been checked.")}
+                        </p>
+                    % endif
+                    <fieldset class="new-validation-options">
+                        <table class="form-options-table">
+                            % for option in validate_options:
+                                <tr>
+                                    <th>${validate_options[option]}</th>
+                                    % if option not in costly_options:
+                                        <th><input name=${option}  type="checkbox" checked></th>
+                                    % else:
+                                        <th title="${_("This can take a lot of time")}"><input
+                                                name=${option}  type="checkbox"></th>
+                                    % endif
+                                </tr>
+                            % endfor
+                        </table>
+                    </fieldset>
+                    %if  saved_reports is not None:
+                        <select name="previous-report" class="old-validation-options" form="form-new-validation"
+                                disabled>
+                            % for report_name in saved_reports:
+                                <option>${report_name}</option>
+                            % endfor
 
+                        </select>
+                    %endif
+                    <input value=${_("Validate Course")} type="submit" onclick="form_new_validation()">
+                </fieldset>
+            </form>
 
-    </div>
+        </div>
 
-    <div id="validreport" data-load="${validate_url}">
-      <div id="loading">
-        <p id="dots"> ${_("Loading in progress, please wait.")}</p>
-      </div>
-      <div id="results">
+        <div id="validreport" data-load="${validate_url}">
+            <div id="loading">
+                <p id="dots"> ${_("Loading in progress, please wait.")}</p>
+            </div>
+            <div id="results">
 
-      </div>
-    </div>
-  </section>
+            </div>
+        </div>
+    </section>
 
 </%block>

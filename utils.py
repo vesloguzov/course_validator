@@ -21,7 +21,7 @@ def _print_all(item):
             print(at, e.message)
 
 
-def last_course_validation(course_key, path_saved_reports):
+def find_course_validation(course_key, path_saved_reports, parameters=None):
     """
     Находит в директории path_saved_reports последнюю проверку для
     course_key и возвращает словарь c username, date и path последней проверки
@@ -37,6 +37,7 @@ def last_course_validation(course_key, path_saved_reports):
         return None
     reporter_name, report_date = [], []
     today = datetime.datetime.now()
+
     for r in this_course_reports:
         try:
             current_report = r.split('.')
@@ -55,13 +56,14 @@ def last_course_validation(course_key, path_saved_reports):
     if not report_date:
         return None
     deltas = [today - d for d in report_date]
-    ind = deltas.index(min(deltas))
+    ind_of_latest = deltas.index(min(deltas))
 
-    return {
-        "username": reporter_name[ind],
-        "date": report_date[ind],
-        "path": path_saved_reports + this_course_reports[ind]
-    }
+
+    #return {
+    #    "username": reporter_name[ind_of_latest],
+    #    "date": report_date[ind_of_latest],
+    #    "path": path_saved_reports + this_course_reports[ind_of_latest]
+    #}
 
 
 def get_path_saved_reports(course_key_string):
