@@ -5,8 +5,8 @@ from setuptools import find_packages, setup
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
-    name='edx_course_validator',
-    version='0.1',
+    name='course_validator',
+    version='0.2',
     packages=find_packages(),
     include_package_data=True,
 )

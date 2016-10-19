@@ -2,41 +2,40 @@
 Installation
 ============
 
-0)  - vagrant ssh
-    - sudo su edxapp
-    - mkdir /edx/app/edxapp/venvs/edxapp/src/edx-course-validator
-    - cd /edx/app/edxapp/venvs/edxapp/src/edx-course-validator
-    - git clone https://github.com/zimka/course_validator.git
-    - cd course_validator
+0) - vagrant ssh
+   - sudo su edxapp
+   - cd /edx/app/edxapp/venvs/edxapp/src/
+   - git clone https://github.com/zimka/edx-course-validator.git
 
-1) pip install -e .
+1) python -m pip install /edx/app/edxapp/venvs/edxapp/src/edx-course-validator/
 
-2) edx-platform/cms/envs/(some environment file, e.g. 'devstack').py: paste code at the end of file
+2) nano /edx/app/edxapp/edx-platform/cms/envs/devstack.py 
+    *(or some other environment.py): paste code at the end of file*
 
   ::
 
     FEATURES["COURSE_VALIDATOR"] = True
     if FEATURES.get("COURSE_VALIDATOR"):
-        INSTALLED_APPS +=("course_validator",)
-        LOCALE_PATHS += ('/edx/app/edxapp/venvs/edxapp/src/edx_course_validator/course_validator/locale',)
-        CV_PATH = REPO_ROOT.dirname() /"venvs"/"edxapp"/"src"/"edx_course_validator"
-        MAKO_TEMPLATES['main'] += CV_PATH/"course_validator"/"templates",
-        LOCALE_PATHS += (CV_PATH/"course_validator"/"locale",)
+        INSTALLED_APPS += ("course_validator",)
+        CV_PATH = REPO_ROOT.dirname() / "venvs" / "edxapp" / "src" / "edx-course-validator"/"course_validator"
+        MAKO_TEMPLATES['main'] += (CV_PATH/"templates",)
+        LOCALE_PATHS += (CV_PATH/"locale",)
 
-3) edx-platform/cms/urls.py: paste code at the end of file
+3) nano /edx/app/edxapp/edx-platform/cms/urls.py 
+       *paste code at the end of file*
 
   ::
 
     if settings.FEATURES.get('COURSE_VALIDATOR'):
-        urlpatterns += patterns(
-            'course_validator.views',
-            url(r'^check_course/{}/$'.format(settings.COURSE_KEY_PATTERN), 'course_validator_handler',
-            name='course_validator_handler'),
-        )
+    urlpatterns += patterns(
+        'course_validator.views',
+        url(r'^check_course/{}/$'.format(settings.COURSE_KEY_PATTERN), 'course_validator_handler',
+        name='course_validator_handler'),
+    )
 
-4) Find edx-platform/cms/templates/widgets/header.html:
+4) nano /edx/app/edxapp/edx-platform/cms/templates/widgets/header.html
 
-  1) Find next place (~125 string)
+  1) *Find next place (~125 string)*
 
     ::
 
@@ -61,7 +60,7 @@ Installation
         ------------------> Paste code from 4.2 here<--------------------------
         </ul>
 
-  2) Paste next code in place that you found in 4.1:
+  2) *Paste next code in place that you found in 4.1:*
 
     ::
 
@@ -73,3 +72,4 @@ Installation
           <a href="${course_validator_url}">${_("Validation")}</a>
         </li>
       % endif
+
