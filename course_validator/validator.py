@@ -30,7 +30,7 @@ class CourseValid(VideoMixin, ReportIOMixin):
             "items_visibility_by_group":_("Items visibility by group"),
             "response_types":_("Response types"),
             "video":_("Video full"),
-            "openassessment":_("Open Response Assessments"),
+            "openassessment":_("Open Response Assessment"),
 
         }
     costly_scenarios = [
@@ -574,7 +574,8 @@ class CourseValid(VideoMixin, ReportIOMixin):
 
     def val_openassessment(self):
         openassessments = [i for i in self.items if i.category=="openassessment"]
-        head = [_("Name"), _("Location"), _("Publishing date"), _("Start date"), _("Cohorts where visible"), _("Assessment steps")]
+        head = [_("Name"), _("Location"), _("Publishing date"), _("Start date"), _("Submission start"), _("Submission due"), _("Cohorts where visible"),
+                _("Assessment steps")]
         body = []
         with self.store.bulk_operations(self.course_key):
             course = self.store.get_course(self.course_key)
@@ -599,6 +600,12 @@ class CourseValid(VideoMixin, ReportIOMixin):
                 current.append(_("Not published"))
             start_date = oa.start
             current.append(str(start_date).split('+')[0])
+
+            submission_start = oa.submission_start
+            current.append(str(submission_start).split('+')[0])
+
+            submission_due = oa.submission_due
+            current.append(str(submission_due).split('+')[0])
 
             if conf_id in oa.group_access:
                 accessed = oa.group_access[conf_id]
