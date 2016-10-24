@@ -132,9 +132,8 @@ class ReportIOMixin():
             course_key= _dict["course_key"]
             username = _dict["username"]
             date_obj = _dict["date"]
-            date_obj = date_obj.replace(microsecond=0)
             name_parts = [str(course_key), str(username),
-                          str(date_obj).replace(" ", "_")]
+                          self.str_date(date_obj).replace(" ", "_")]
             report_name = "__".join(name_parts) + ".csv"
             return report_name
 
@@ -158,10 +157,14 @@ class ReportIOMixin():
         def readable(self):
             username = self.dict["username"]
             date_obj = self.dict["date"]
-            date_obj.replace(microsecond=0)
             name_parts = [str(username),
-                          str(date_obj)]
+                          self.str_date(date_obj)]
             return ", ".join(name_parts)
+
+        def str_date(self, date):
+            if date is None:
+                return u'No date'
+            return str(date.replace(microsecond=0))
 
     def write_validation(self, validation):
         cls = self.__class__

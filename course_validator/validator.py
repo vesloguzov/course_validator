@@ -30,6 +30,8 @@ class CourseValid(VideoMixin, ReportIOMixin):
             "items_visibility_by_group":_("Items visibility by group"),
             "response_types":_("Response types"),
             "video":_("Video full"),
+            "openassessment":_("Open Response Assessments"),
+
         }
     costly_scenarios = [
             "video",
@@ -569,3 +571,49 @@ class CourseValid(VideoMixin, ReportIOMixin):
                   ]
         answ = sum([getattr(seq, y, False) for y in fields])
         return answ
+
+    def val_openassessment(self):
+        openassessments = [i for i in self.items if i.category=="openassessment"]
+        head = [_("Name"), _("Location"), _("Publishing date"), _("Start date"), _("Cohorts where visible"), _("Assessment steps")]
+        body = []
+        with self.store.bulk_operations(self.course_key):
+            course = self.store.get_course(self.course_key)
+            content_group_configuration = GroupConfiguration.get_or_create_content_group(self.store, course)
+        groups = content_group_configuration["groups"]
+        conf_id = content_group_configuration["id"]
+        group_id_dict = dict([(g["id"], g["name"]) for g in groups])
+
+        for oa in openassessments:
+            current = []
+            name = oa.display_name
+            current.append(name)
+
+            parent = oa.get_parent()
+            location= u"{}, {}".format(parent.display_name, parent.get_parent().display_name)
+            current.append(location)
+
+            is_published = oa.published_on
+            if is_published:
+                current.append(str(is_published).split('.')[0])
+            else:
+                current.append(_("Not published"))
+            start_date = oa.start
+            current.append(str(start_date).split('+')[0])
+
+            if conf_id in oa.group_access:
+                accessed = oa.group_access[conf_id]
+                visible_groups = u", ".join(group_id_dict[i] for i in accessed)
+            else:
+                visible_groups = _("Usual student")
+            current.append(visible_groups)
+
+            steps = oa.assessment_steps
+            #current.append(u",".join(str(s) for s in steps))
+            current.append(u",".join(str(s) for s in range(1,len(steps)+1)))
+
+            body.append(current)
+        return Report(name=self.scenarios_names_dict["openassessment"],
+                      head=head,
+                      body=body,
+                      warnings=[]
+                      )
