@@ -574,7 +574,7 @@ class CourseValid(VideoMixin, ReportIOMixin):
 
     def val_openassessment(self):
         openassessments = [i for i in self.items if i.category=="openassessment"]
-        head = [_("Name"), _("Location"), _("Publishing date"), _("Start date"), _("Submission start"), _("Submission due"), _("Cohorts where visible"),
+        head = [_("Name"), _("Location"), _("Publishing date"), _("Submission start"), _("Submission due"), _("Peer start"), _("Peer due"), _("Cohorts where visible"),
                 _("Assessment steps")]
         body = []
         with self.store.bulk_operations(self.course_key):
@@ -584,6 +584,8 @@ class CourseValid(VideoMixin, ReportIOMixin):
         conf_id = content_group_configuration["id"]
         group_id_dict = dict([(g["id"], g["name"]) for g in groups])
 
+        unicode2date = lambda x: datetime.strptime(x.split('+')[0], '%Y-%m-%dT%H:%M:%S')
+        date2str = lambda x: x.strftime("%d.%m.%Y, %H:%M")
         for oa in openassessments:
             current = []
             name = oa.display_name
@@ -593,19 +595,26 @@ class CourseValid(VideoMixin, ReportIOMixin):
             location= u"{}, {}".format(parent.display_name, parent.get_parent().display_name)
             current.append(location)
 
-            is_published = oa.published_on
-            if is_published:
-                current.append(str(is_published).split('.')[0])
+            publish_date = oa.published_on
+            if publish_date:
+                current.append(date2str(publish_date))
             else:
                 current.append(_("Not published"))
-            start_date = oa.start
-            current.append(str(start_date).split('+')[0])
 
-            submission_start = oa.submission_start
-            current.append(str(submission_start).split('+')[0])
+            #start_date = oa.start
+            #current.append(date2str(start_date))
 
-            submission_due = oa.submission_due
-            current.append(str(submission_due).split('+')[0])
+            submission_start = unicode2date(oa.submission_start)
+            current.append(date2str(submission_start))
+
+            submission_due = unicode2date(oa.submission_due)
+            current.append(date2str(submission_due))
+
+            peer_start = unicode2date(oa.rubric_assessments[1]["start"])
+            current.append(date2str(peer_start))
+
+            peer_due = unicode2date(oa.rubric_assessments[1]["due"])
+            current.append(date2str(peer_due))
 
             if conf_id in oa.group_access:
                 accessed = oa.group_access[conf_id]
