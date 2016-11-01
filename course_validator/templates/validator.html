@@ -165,10 +165,10 @@
                     % endif
                     <fieldset class="new-validation-options">
                         <table class="form-options-table">
-                            % for option in validate_options:
+                            % for option in info['validate_options']:
                                 <tr>
-                                    <th>${validate_options[option]}</th>
-                                    % if option not in costly_options:
+                                    <th>${info['validate_options'][option]}</th>
+                                    % if option not in info['costly_options']:
                                         <th><input name=${option}  type="checkbox" checked></th>
                                     % else:
                                         <th title="${_("This can take a lot of time")}"><input
@@ -187,7 +187,7 @@
 
                         </select>
                     %endif
-                    <input value=${_("Validate Course")} type="submit" onclick="form_new_validation()">
+                    <input value='${_("Validate Course")}' type="submit" onclick="form_new_validation()">
                 </fieldset>
             </form>
 

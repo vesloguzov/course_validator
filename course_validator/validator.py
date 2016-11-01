@@ -4,6 +4,7 @@ import logging
 from collections import Counter
 
 from contentstore.course_group_config import GroupConfiguration
+from contentstore.utils import reverse_usage_url
 from django.utils.translation import ugettext as _
 from models.settings.course_grading import CourseGradingModel
 from opaque_keys.edx.keys import CourseKey
@@ -44,6 +45,7 @@ class CourseValid(VideoMixin, ReportIOMixin):
         self.course_key_string = course_key_string
         self.course_key = CourseKey.from_string(course_key_string)
         self.reports = []
+        self.addtitional_info = dict()
 
     def get_new_validation(self, form_data):
         self.items = self.store.get_items(self.course_key)
@@ -51,6 +53,15 @@ class CourseValid(VideoMixin, ReportIOMixin):
         self._validate_scenarios(scenarios)
         self.send_log()
         return self.get_sections_for_rendering()
+
+    def get_additional_info(self):
+        info = {
+            "costly_options": CourseValid.costly_scenarios,
+            "validate_options":CourseValid.scenarios_names_dict,
+            "course_key_string": self.course_key_string,
+        }
+        info.update(self.addtitional_info)
+        return info
 
     def get_old_validation(self, form_data):
         readable = form_data["previous-report"][0]
@@ -548,9 +559,9 @@ class CourseValid(VideoMixin, ReportIOMixin):
             else:
                 duration = 'None'
             due_date = str(se.due)
+
             proctored = se.is_proctored_exam
             body.append([name, chapter_name, grade, start, duration, due_date, proctored])
-
         return Report(name=_("Special exams"),
                       head=head,
                       body=body,
@@ -574,6 +585,7 @@ class CourseValid(VideoMixin, ReportIOMixin):
 
     def val_openassessment(self):
         openassessments = [i for i in self.items if i.category=="openassessment"]
+        additional_info = {}
         head = [_("Name"), _("Location"), _("Publishing date"), _("Submission start"), _("Submission due"), _("Peer start"), _("Peer due"), _("Cohorts where visible"),
                 _("Assessment steps")]
         body = []
@@ -586,7 +598,10 @@ class CourseValid(VideoMixin, ReportIOMixin):
 
         unicode2date = lambda x: datetime.strptime(x.split('+')[0], '%Y-%m-%dT%H:%M:%S')
         date2str = lambda x: x.strftime("%d.%m.%Y, %H:%M")
-        for oa in openassessments:
+        for num, oa in enumerate(openassessments):
+            url_key = (num, 0)
+            additional_info[url_key] = reverse_usage_url("container_handler", oa.location)
+
             current = []
             name = oa.display_name
             current.append(name)
@@ -628,6 +643,7 @@ class CourseValid(VideoMixin, ReportIOMixin):
             current.append(u",".join(str(s) for s in range(1,len(steps)+1)))
 
             body.append(current)
+        self.addtitional_info.update({self.scenarios_names_dict["openassessment"]:additional_info})
         return Report(name=self.scenarios_names_dict["openassessment"],
                       head=head,
                       body=body,

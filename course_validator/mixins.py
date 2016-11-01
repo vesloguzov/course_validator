@@ -208,7 +208,7 @@ class ReportIOMixin():
     def get_path_for_readable(self, readable):
         cls = self.__class__
         paths = cls.get_course_report_abspaths(self.course_key_string)
-        readables = cls.get_course_report_readable(self.course_key_string)
+        readables = cls.get_saved_reports_for_course(self.course_key_string)
         for num, path in enumerate(paths):
             if readables[num] == readable:
                 return path
@@ -276,7 +276,7 @@ class ReportIOMixin():
         return confirmed_course_report_files
 
     @classmethod
-    def get_course_report_readable(cls, course_key_string):
+    def get_saved_reports_for_course(cls, course_key_string):
         report_files = cls.get_course_report_abspaths(course_key_string)
         if report_files is None:
             return None
