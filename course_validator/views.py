@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
-from .validator import CourseValid
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect
 from django.core.urlresolvers import reverse
-from opaque_keys.edx.keys import CourseKey
-from xmodule.modulestore.django import modulestore
-from edxmako.shortcuts import render_to_response
-from django.views.decorators.http import require_GET
+from django.core.context_processors import csrf
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.http import HttpResponse, JsonResponse
-from .utils import find_course_validation, get_path_saved_reports
+from edxmako.shortcuts import render_to_response
+from opaque_keys.edx.keys import CourseKey
+from xmodule.modulestore.django import modulestore
+from .validator import CourseValid
 
 
 __all__ = ["course_validator_handler"]
@@ -25,6 +23,7 @@ def reverse_validator_course_url(course_key):
 @ensure_csrf_cookie
 def course_validator_handler(request, course_key_string=None):
     """Обработчик url на проверку курса"""
+    csrf_token = csrf(request)['csrf_token']
     course_key = CourseKey.from_string(course_key_string)
     course_module = modulestore().get_course(course_key)
 
@@ -49,11 +48,9 @@ def course_validator_handler(request, course_key_string=None):
     saved_reports = CourseValid.get_saved_reports_for_course(course_key_string)
     additional_info = CV.get_additional_info()
     context.update({
+        "csrf": csrf_token,
         "context_course": course_module,
-        #"course_key_string": course_key_string,
         "validate_url": execute_url,
-        #"validate_options":CourseValid.scenarios_names_dict,
-        #"costly_options":CourseValid.costly_scenarios,
         "saved_reports": saved_reports,
         'info':additional_info
     })
