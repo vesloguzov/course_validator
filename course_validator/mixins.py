@@ -8,7 +8,7 @@ from datetime import timedelta as td
 import codecs
 import os
 from django.utils.translation import ugettext as _
-
+from .utils import validation_logger
 from course_validator.utils import Report
 
 
@@ -166,7 +166,8 @@ class ReportIOMixin():
                 return u'No date'
             return str(date.replace(microsecond=0))
 
-    def write_validation(self, validation):
+    @validation_logger
+    def save_validation_report(self, validation):
         cls = self.__class__
         path_saved_reports = cls.get_path_saved_reports(self.course_key_string)
         try:
@@ -195,7 +196,8 @@ class ReportIOMixin():
         except Exception as e:
             logging.error("Report wasn't saved:{}".format(str(e)))
 
-    def read_validation(self, path, delim=u'\t'):
+    @validation_logger
+    def load_validation_report(self, path, delim=u'\t'):
         reports = []
         with codecs.open(path, "r", encoding="utf-8") as file:
             header = file.readline()  # Don't need it actually

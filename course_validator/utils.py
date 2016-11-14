@@ -4,6 +4,7 @@ from collections import namedtuple
 import os
 import time
 import logging
+from functools import wraps
 
 Report = namedtuple("Report", ["name", "head", "body", "warnings"])
 
@@ -87,3 +88,26 @@ def timeit(method):
         return result
 
     return timed
+
+
+def validation_logger(method):
+    _n = method.__name__.split("_")
+    name = method.__name__
+
+    if len(_n) > 1:
+        if _n[0] == "val":
+            name = "Validation '{}'".format(" ".join(_n[1:]))
+
+    @wraps(method)
+    def wrap(*args, **kwargs):
+        message_in = "{} started.".format(name)
+        message_out = "{} finished ".format(name)
+        logging.info(message_in)
+        ts = time.time()
+        result = method(*args,**kwargs)
+        te = time.time()
+
+        message_out += "({:1.3f} s).".format(float(te-ts))
+        logging.info(message_out)
+        return result
+    return wrap

@@ -13,7 +13,7 @@ from xmodule.modulestore.django import modulestore
 from course_validator.mixins import VideoMixin, ReportIOMixin
 from openedx.core.djangoapps.course_groups.cohorts import get_course_cohorts, get_course_cohort_settings
 from .settings import *
-from .utils import Report
+from .utils import Report, validation_logger
 
 
 class CourseValid(VideoMixin, ReportIOMixin):
@@ -66,7 +66,7 @@ class CourseValid(VideoMixin, ReportIOMixin):
     def get_old_validation(self, form_data):
         readable = form_data["previous-report"][0]
         path = self.get_path_for_readable(readable)
-        self.reports = self.read_validation(path)
+        self.reports = self.load_validation_report(path)
         return self.get_sections_for_rendering()
 
     def _validate_scenarios(self, scenarios=None):
@@ -89,7 +89,7 @@ class CourseValid(VideoMixin, ReportIOMixin):
                 else:
                     results.append(report)
         self.reports = results
-        self.write_validation(self.reports)
+        self.save_validation_report(self.reports)
 
     def get_sections_for_rendering(self):
         sections = []
@@ -109,6 +109,7 @@ class CourseValid(VideoMixin, ReportIOMixin):
             sections.append(sec)
         return sections
 
+    @validation_logger
     def send_log(self):
         """
         Посылает в лог информацию о проверки в виде JSON:
@@ -136,6 +137,7 @@ class CourseValid(VideoMixin, ReportIOMixin):
         else:
             logging.warning(mes)
 
+    @validation_logger
     def val_video(self):
         """
         Проверка видео: наличие ссылки на YouTube либо edx_video_id.
@@ -225,6 +227,7 @@ class CourseValid(VideoMixin, ReportIOMixin):
         )
         return [results_short, results_full]
 
+    @validation_logger
     def val_grade(self):
         """
         Проверка оценок:
@@ -277,6 +280,7 @@ class CourseValid(VideoMixin, ReportIOMixin):
             )
         return results
 
+    @validation_logger
     def val_group(self):
         """Проверка наличия и использования в курсе групп"""
         with self.store.bulk_operations(self.course_key):
@@ -297,6 +301,7 @@ class CourseValid(VideoMixin, ReportIOMixin):
             )
         return results
 
+    @validation_logger
     def val_module(self):
         """Проверка отсутствия пустых блоков, подсчет количества каждой категории блоков"""
         all_cat_dict = Counter([i.category for i in self.items])
@@ -341,6 +346,7 @@ class CourseValid(VideoMixin, ReportIOMixin):
             )
         return results
 
+    @validation_logger
     def val_dates(self):
         """
         Проверка дат:
@@ -382,6 +388,7 @@ class CourseValid(VideoMixin, ReportIOMixin):
             )
         return result
 
+    @validation_logger
     def val_cohorts(self):
         """Проверка наличия в курсе когорт, для каждой вывод их численности либо сообщение об их отсутствии"""
         course = self.store.get_course(self.course_key)
@@ -403,6 +410,7 @@ class CourseValid(VideoMixin, ReportIOMixin):
             )
         return result
 
+    @validation_logger
     def val_proctoring(self):
         """Проверка наличия proctored экзаменов"""
         course = self.store.get_course(self.course_key)
@@ -423,6 +431,7 @@ class CourseValid(VideoMixin, ReportIOMixin):
             )
         return result
 
+    @validation_logger
     def val_items_visibility_by_group(self):
         """Составление таблицы видимости элементов для групп"""
         with self.store.bulk_operations(self.course_key):
@@ -478,6 +487,7 @@ class CourseValid(VideoMixin, ReportIOMixin):
             warnings=[]
             )
 
+    @validation_logger
     def val_response_types(self):
         """Считает по всем типам problem количество блоков в курсе"""
         problems = [i for i in self.items if i.category == "problem"]
@@ -528,6 +538,7 @@ class CourseValid(VideoMixin, ReportIOMixin):
             warnings=warnings
         )
 
+    @validation_logger
     def val_advanced_modules(self):
         """
         Выводить все подключенные к OpenEdx модули
@@ -542,6 +553,7 @@ class CourseValid(VideoMixin, ReportIOMixin):
                       warnings=[]
         )
 
+    @validation_logger
     def val_special_exams(self):
         sequentials = [i for i in self.items if i.category=='sequential']
         special_exams = [i for i in sequentials if self._check_special_exam(i)]
@@ -568,21 +580,7 @@ class CourseValid(VideoMixin, ReportIOMixin):
                       warnings=[]
                       )
 
-    def _check_special_exam(self, seq):
-        """
-        Проверяет является ли объект seq специальным экзаменом,
-        т.е. верно ли хотя бы одно поле
-        :param seq:
-        :return:
-        """
-        fields = ['is_entrance_exam',
-                  'is_practice_exame',
-                  'is_proctored_exam',
-                  'is_time_limited'
-                  ]
-        answ = sum([getattr(seq, y, False) for y in fields])
-        return answ
-
+    @validation_logger
     def val_openassessment(self):
         openassessments = [i for i in self.items if i.category=="openassessment"]
         additional_info = {}
@@ -649,3 +647,18 @@ class CourseValid(VideoMixin, ReportIOMixin):
                       body=body,
                       warnings=[]
                       )
+
+    def _check_special_exam(self, seq):
+        """
+        Проверяет является ли объект seq специальным экзаменом,
+        т.е. верно ли хотя бы одно поле
+        :param seq:
+        :return:
+        """
+        fields = ['is_entrance_exam',
+                  'is_practice_exame',
+                  'is_proctored_exam',
+                  'is_time_limited'
+                  ]
+        answ = sum([getattr(seq, y, False) for y in fields])
+        return answ
