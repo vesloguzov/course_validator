@@ -96,7 +96,7 @@ class VideoMixin:
 
     def format_timdelta(self,tdobj):
         s = tdobj.total_seconds()
-        return u"{:.0f}:{:.0f}:{:.0f}".format(s // 3600, s % 3600 // 60, s % 60)
+        return u"{:02d}:{:02d}:{:02d}".format(int(s // 3600), int(s % 3600 // 60), int(s % 60))
 
 
 class ReportIOMixin():

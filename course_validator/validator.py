@@ -73,7 +73,6 @@ class CourseValid(VideoMixin, ReportIOMixin):
         """Запуск всех сценариев проверок"""
         try:
             import edxval.api as edxval_api
-            val_profiles = ["youtube", "desktop_webm", "desktop_mp4"]
         except ImportError:
             logging.error("Course validator: no api for video")
 
@@ -166,7 +165,7 @@ class CourseValid(VideoMixin, ReportIOMixin):
         chapter_objects.sort(key=lambda x:x.start)
         # Суммирование длительностей всех видео
         total = timedelta()
-        wrap_valmark = lambda s: unicode("<div class='valmark'>"+ s + "</div>")
+        bold = lambda s: unicode("<div class='valmark'>"+ s + "</div>")
         chap_strs = []
         #Проверка наличия апи - если его нет, то не надо для каждого видео стучать в evms
         api_found = self._api_set_up()
@@ -178,36 +177,36 @@ class CourseValid(VideoMixin, ReportIOMixin):
             chap_key = chap.display_name
             full_chapter_strs = []
             for v in chapter_video_dict[chap_key]:
-                mes = ""
+                message_or_time = ""
                 success = 0
                 if not (v.youtube_id_1_0) and not (v.edx_video_id):
-                    mes = _("No source for video '{name}' in '{vertical}' ").\
+                    message_or_time = _("No source for video '{name}' in '{vertical}' ").\
                         format(name=v.display_name, vertical=v.get_parent().display_name)
-                    warnings.append(mes)
+                    warnings.append(message_or_time)
 
                 if v.youtube_id_1_0:
-                    success, cur_mes = self.youtube_duration(v.youtube_id_1_0)
+                    success, message = self.youtube_duration(v.youtube_id_1_0)
                     if not success:
-                        warnings.append(cur_mes)
-                    mes = cur_mes
+                        warnings.append(message)
+                    message_or_time = message
 
                 if v.edx_video_id:
                     if api_found:
-                        success, cur_mes = self.edx_id_duration(v.edx_video_id)
+                        success, message = self.edx_id_duration(v.edx_video_id)
                         if not success:
-                            warnings.append(cur_mes)
-                        mes = cur_mes
+                            warnings.append(message)
+                        message_or_time = message
 
                 if success:
-                    counted_time = mes
+                    counted_time = message_or_time
                     total += counted_time
-                    chap_total += mes
-                    if mes>timedelta(seconds=MAX_VIDEO_DURATION):
+                    chap_total += message_or_time
+                    if message_or_time>timedelta(seconds=MAX_VIDEO_DURATION):
                         warnings.append(_("Video {} is longer than 3600 secs").format(v.display_name))
 
-                full_chapter_strs.append([v.display_name, unicode(mes)])
-            full_chapter_strs.insert(0, [wrap_valmark(chap_key),
-                                        wrap_valmark(self.format_timdelta(chap_total))])
+                full_chapter_strs.append([v.display_name, unicode(message_or_time)])
+            chapter_summary = [bold(chap_key),  bold(unicode(self.format_timdelta(chap_total)))]
+            full_chapter_strs.insert(0, chapter_summary)
             video_strs.extend(full_chapter_strs)
             chap_strs.append([chap_key,
                                  self.format_timdelta(chap_total)
