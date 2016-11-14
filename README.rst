@@ -21,8 +21,12 @@ Installation
         MAKO_TEMPLATES['main'] += (CV_PATH/"templates",)
         LOCALE_PATHS += (CV_PATH/"locale",)
 
-3) nano /edx/app/edxapp/edx-platform/cms/urls.py 
-       *paste code at the end of file*
+
+  If you install course-validator in other directory, i.e. in /edx/app/edxapp/edx-platform/,
+  replace 4th string: CV_PATH = REPO_ROOT.dirname() / "edx-platform" /"edx-course-validator"/"course_validator"
+
+3) nano /edx/app/edxapp/edx-platform/cms/urls.py
+    *paste code at the end of file*
 
   ::
 
@@ -73,3 +77,9 @@ Installation
         </li>
       % endif
 
+5) Restart cms, check that new item "Validation" is in CMS > Some Course >  Tools
+
+====
+Info
+====
+  In edx-course-validator/course_validator/settings.py can be found global variables that define path where reports are saved and other validation settings.
