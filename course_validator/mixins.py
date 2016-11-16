@@ -66,14 +66,16 @@ class VideoMixin:
         dur = td(seconds=int(float(temp)))
         return 1, dur
 
-    def _api_set_up(self):
+    @staticmethod
+    def _api_set_up():
         try:
             from openedx.core.djangoapps.video_evms.api import get_video_info
         except ImportError:
             return 0
         return 1
 
-    def _youtube_time_expand(self, duration):
+    @staticmethod
+    def _youtube_time_expand(duration):
         timeunits = {
             'w': 604800,
             'd': 86400,
@@ -94,7 +96,8 @@ class VideoMixin:
             value = ''
         return secs
 
-    def format_timdelta(self,tdobj):
+    @staticmethod
+    def format_timedelta(tdobj):
         s = tdobj.total_seconds()
         return u"{:02d}:{:02d}:{:02d}".format(int(s // 3600), int(s % 3600 // 60), int(s % 60))
 
@@ -103,12 +106,14 @@ class ReportIOMixin():
     """
     Сюда вынесены методы касающиеся чтения и записи отчетов
     """
+
     class SavedReport():
         """
         Класс для работы с названиями сохраненных файлов. Дает два полных предаставления:
         словарь с именем пользователя, course_key_string и датой(datetime)
         и название для файла отчета с .csv расширением
         """
+
         def __init__(self, dict_=None, relpath=None, **kwargs):
             if not (dict_ is None):
                 self.dict = dict_
@@ -127,9 +132,8 @@ class ReportIOMixin():
                                  date=date)
                 self.relpath = self._dict2relpath(self.dict)
 
-
         def _dict2relpath(self, _dict):
-            course_key= _dict["course_key"]
+            course_key = _dict["course_key"]
             username = _dict["username"]
             date_obj = _dict["date"]
             name_parts = [str(course_key), str(username),
@@ -138,7 +142,7 @@ class ReportIOMixin():
             return report_name
 
         def _relpath2dict(self, relpath):
-            d = lambda x,y,z: dict(course_key=x, username=y, date=z)
+            d = lambda x, y, z: dict(course_key=x, username=y, date=z)
 
             try:
                 current_report = relpath.split('.')
@@ -255,7 +259,7 @@ class ReportIOMixin():
             :return:
             """
         path_saved_reports = cls.get_path_saved_reports(course_key_string)
-        
+
         if not os.path.exists(path_saved_reports):
             return None
         all_reports = os.listdir(path_saved_reports)
@@ -284,5 +288,5 @@ class ReportIOMixin():
             return None
         processing = lambda x: (cls.SavedReport(relpath=x.split("/")[-1]))
         saved_reports = [processing(x) for x in report_files]
-        saved_reports_sorted = sorted(saved_reports, key=lambda x:x.dict["date"], reverse=True)
+        saved_reports_sorted = sorted(saved_reports, key=lambda x: x.dict["date"], reverse=True)
         return [s.readable() for s in saved_reports_sorted]

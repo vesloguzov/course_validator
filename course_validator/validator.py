@@ -19,37 +19,38 @@ from .utils import Report, validation_logger
 class CourseValid(VideoMixin, ReportIOMixin):
     """Проверка сценариев и формирование логов"""
 
-    scenarios_names_dict = {
-            "grade":_("Grade"),
-            "special_exams":_("Special exams"),
-            "advanced_modules": _("Advanced Modules"),
-            "group":_("Group"),
-            "module":_("Module"),
-            "cohorts":_(" Cohorts "),
-            "proctoring":_("Proctoring"),
-            "dates":_("Dates"),
-            "items_visibility_by_group":_("Items visibility by group"),
-            "response_types":_("Response types"),
-            "video":_("Video full"),
-            "openassessment":_("Open Response Assessment"),
+    scenarios_names = {
+        "grade": _("Grade"),
+        "special_exams": _("Special exams"),
+        "advanced_modules": _("Advanced Modules"),
+        "group": _("Group"),
+        "module": _("Module"),
+        "cohorts": _(" Cohorts "),
+        "proctoring": _("Proctoring"),
+        "dates": _("Dates"),
+        "items_visibility_by_group": _("Items visibility by group"),
+        "response_types": _("Response types"),
+        "video": _("Video full"),
+        "openassessment": _("Open Response Assessment"),
 
-        }
+    }
     costly_scenarios = [
-            "video",
-            "dates",
-        ]
+        "video",
+        "dates",
+    ]
 
     def __init__(self, request, course_key_string):
         self.request = request
         self.store = modulestore()
         self.course_key_string = course_key_string
         self.course_key = CourseKey.from_string(course_key_string)
+        self.items = None
         self.reports = []
         self.addtitional_info = dict()
 
     def get_new_validation(self, form_data):
         self.items = self.store.get_items(self.course_key)
-        scenarios = [s for s in form_data.keys() if s in CourseValid.scenarios_names_dict]
+        scenarios = [s for s in form_data.keys() if s in CourseValid.scenarios_names]
         self._validate_scenarios(scenarios)
         self.send_log()
         return self.get_sections_for_rendering()
@@ -57,7 +58,7 @@ class CourseValid(VideoMixin, ReportIOMixin):
     def get_additional_info(self):
         info = {
             "costly_options": CourseValid.costly_scenarios,
-            "validate_options":CourseValid.scenarios_names_dict,
+            "validate_options": CourseValid.scenarios_names,
             "course_key_string": self.course_key_string,
         }
         info.update(self.addtitional_info)
@@ -158,16 +159,16 @@ class CourseValid(VideoMixin, ReportIOMixin):
             if chap_name in chapter_video_dict.keys():
                 chapter_video_dict[chap_name].append(v)
             else:
-                chapter_video_dict.update({chap_name:[v]})
+                chapter_video_dict.update({chap_name: [v]})
                 chapter_objects.append(chap)
         for chap in chapter_video_dict:
-            chapter_video_dict[chap].sort(key=lambda x:x.start)
-        chapter_objects.sort(key=lambda x:x.start)
+            chapter_video_dict[chap].sort(key=lambda x: x.start)
+        chapter_objects.sort(key=lambda x: x.start)
         # Суммирование длительностей всех видео
         total = timedelta()
-        bold = lambda s: unicode("<div class='valmark'>"+ s + "</div>")
+        bold = lambda s: unicode("<div class='valmark'>" + s + "</div>")
         chap_strs = []
-        #Проверка наличия апи - если его нет, то не надо для каждого видео стучать в evms
+        # Проверка наличия апи - если его нет, то не надо для каждого видео стучать в evms
         api_found = self._api_set_up()
 
         if not api_found:
@@ -179,8 +180,8 @@ class CourseValid(VideoMixin, ReportIOMixin):
             for v in chapter_video_dict[chap_key]:
                 message_or_time = ""
                 success = 0
-                if not (v.youtube_id_1_0) and not (v.edx_video_id):
-                    message_or_time = _("No source for video '{name}' in '{vertical}' ").\
+                if not v.youtube_id_1_0 and not v.edx_video_id:
+                    message_or_time = _("No source for video '{name}' in '{vertical}' "). \
                         format(name=v.display_name, vertical=v.get_parent().display_name)
                     warnings.append(message_or_time)
 
@@ -201,29 +202,29 @@ class CourseValid(VideoMixin, ReportIOMixin):
                     counted_time = message_or_time
                     total += counted_time
                     chap_total += message_or_time
-                    if message_or_time>timedelta(seconds=MAX_VIDEO_DURATION):
+                    if message_or_time > timedelta(seconds=MAX_VIDEO_DURATION):
                         warnings.append(_("Video {} is longer than 3600 secs").format(v.display_name))
 
                 full_chapter_strs.append([v.display_name, unicode(message_or_time)])
-            chapter_summary = [bold(chap_key),  bold(unicode(self.format_timdelta(chap_total)))]
+            chapter_summary = [bold(chap_key), bold(unicode(self.format_timedelta(chap_total)))]
             full_chapter_strs.insert(0, chapter_summary)
             video_strs.extend(full_chapter_strs)
             chap_strs.append([chap_key,
-                                 self.format_timdelta(chap_total)
-                                 ])
+                              self.format_timedelta(chap_total)
+                              ])
 
-        head = [_("Video name"), _("Video duration(sum: {})").format(self.format_timdelta(total))]
+        head = [_("Video name"), _("Video duration(sum: {})").format(self.format_timedelta(total))]
         head_chapter = [_("Chapter name"), _("Chapter summary video time")]
         results_full = Report(name=_("Video full"),
-            head=head,
-            body=video_strs,
-            warnings=warnings,
-            )
+                              head=head,
+                              body=video_strs,
+                              warnings=warnings,
+                              )
         results_short = Report(name=_("Video short"),
-            head=head_chapter,
-            body=chap_strs,
-            warnings=[],
-        )
+                               head=head_chapter,
+                               body=chap_strs,
+                               warnings=[],
+                               )
         return [results_short, results_full]
 
     @validation_logger
@@ -264,7 +265,7 @@ class CourseValid(VideoMixin, ReportIOMixin):
         for num, key in enumerate(grade_types):
             cur_items = [i for i in grade_items if unicode(i.format) == key]
             if len(cur_items) != int(grade_nums[num]):
-                r = _("Task type '{name}': supposed to be {n1}, found in course {n2}").\
+                r = _("Task type '{name}': supposed to be {n1}, found in course {n2}"). \
                     format(name=key, n1=grade_nums[num], n2=len(cur_items))
                 report.append(r)
         # Проверка отсутствия в материале курсе заданий с типом не указанным в настройках
@@ -273,10 +274,10 @@ class CourseValid(VideoMixin, ReportIOMixin):
                 r = _("Task of type '{}' in course, no such task type in grading settings")
                 report.append(r)
         results = Report(name=_("Grade"),
-            head=head,
-            body=grade_strs,
-            warnings=report,
-            )
+                         head=head,
+                         body=grade_strs,
+                         warnings=report,
+                         )
         return results
 
     @validation_logger
@@ -291,13 +292,12 @@ class CourseValid(VideoMixin, ReportIOMixin):
         # запись для каждой группы ее использования
         group_strs = [[g["name"], str(is_g_used(g))] for g in groups]
         head = [_("Group name"), _("Group used")]
-        report = []
 
         results = Report(name=_("Group"),
-            head=head,
-            body=group_strs,
-            warnings=report,
-            )
+                         head=head,
+                         body=group_strs,
+                         warnings=[],
+                         )
         return results
 
     @validation_logger
@@ -335,14 +335,14 @@ class CourseValid(VideoMixin, ReportIOMixin):
         primary_items = [i for i in self.items if i.category in check_empty_cat]
         for i in primary_items:
             if not len(i.get_children()):
-                s = _("Block '{name}'({cat}) doesn't have any inner blocks or tasks")\
+                s = _("Block '{name}'({cat}) doesn't have any inner blocks or tasks") \
                     .format(name=i.display_name, cat=i.category)
                 report.append(s)
         results = Report(name=_("Module"),
-            head=head,
-            body=xmodule_strs,
-            warnings=report
-            )
+                         head=head,
+                         body=xmodule_strs,
+                         warnings=report
+                         )
         return results
 
     @validation_logger
@@ -361,11 +361,11 @@ class CourseValid(VideoMixin, ReportIOMixin):
             if not parent:
                 continue
             if not parent.start or not child.start:
-                print("!?",parent.display_name, parent.start, child.display_name, child.start)
+                print("!?", parent.display_name, parent.start, child.display_name, child.start)
             if parent.start > child.start:
-                mes = _("'{n1}' block has start date {d1}, but his parent '{n2}' has later start date {d2}").\
+                mes = _("'{n1}' block has start date {d1}, but his parent '{n2}' has later start date {d2}"). \
                     format(n1=child.display_name, d1=child.start,
-                    n2=parent.display_name, d2=parent.start)
+                           n2=parent.display_name, d2=parent.start)
                 report.append(mes)
 
         date_check = datetime.now(items[0].start.tzinfo) + timedelta(days=DELTA_DATE_CHECK)
@@ -381,10 +381,10 @@ class CourseValid(VideoMixin, ReportIOMixin):
         elif all([x.visible_to_staff_only for x in items_by_date_check]):
             report.append(_("No visible for students stuff by tomorrow"))
         result = Report(name=_("Dates"),
-            head=[],
-            body=[],
-            warnings=report,
-            )
+                        head=[],
+                        body=[],
+                        warnings=report,
+                        )
         return result
 
     @validation_logger
@@ -403,10 +403,10 @@ class CourseValid(VideoMixin, ReportIOMixin):
             cohort_strs = []
             report.append(_("Cohorts are disabled"))
         result = Report(name=_(" Cohorts "),
-            head=[_(" Cohorts "),_("Population")],
-            body=cohort_strs,
-            warnings=report,
-            )
+                        head=[_(" Cohorts "), _("Population")],
+                        body=cohort_strs,
+                        warnings=report,
+                        )
         return result
 
     @validation_logger
@@ -414,9 +414,9 @@ class CourseValid(VideoMixin, ReportIOMixin):
         """Проверка наличия proctored экзаменов"""
         course = self.store.get_course(self.course_key)
         check_avail_proctor_service = [_("Available proctoring services"),
-            getattr(course, "available_proctoring_services", _("Not defined"))]
+                                       getattr(course, "available_proctoring_services", _("Not defined"))]
         check_proctor_service = [_("Proctoring Service"),
-                                              unicode(getattr(course, "proctoring_service", _("Not defined")))]
+                                 unicode(getattr(course, "proctoring_service", _("Not defined")))]
 
         proctor_strs = [
             check_avail_proctor_service,
@@ -424,10 +424,10 @@ class CourseValid(VideoMixin, ReportIOMixin):
         ]
 
         result = Report(name=_("Proctoring"),
-            head=[_("Parameter"), _("Value")],
-            body=proctor_strs,
-            warnings=[],
-            )
+                        head=[_("Parameter"), _("Value")],
+                        body=proctor_strs,
+                        warnings=[],
+                        )
         return result
 
     @validation_logger
@@ -439,13 +439,13 @@ class CourseValid(VideoMixin, ReportIOMixin):
         groups = content_group_configuration["groups"]
         group_names = [g["name"] for g in groups]
         name = _("Items visibility by group")
-        head = [_("Item type"),_("Usual student")] + group_names
+        head = [_("Item type"), _("Usual student")] + group_names
         checked_cats = ["chapter",
-             "sequential",
-             "vertical",
-             "problem",
-             "video",
-             ]
+                        "sequential",
+                        "vertical",
+                        "problem",
+                        "video",
+                        ]
 
         get_items_by_type = lambda x: [y for y in self.items if y.category == x]
 
@@ -481,10 +481,10 @@ class CourseValid(VideoMixin, ReportIOMixin):
             gv_strs.append(cat_str)
 
         return Report(name=name,
-            head=head,
-            body=gv_strs,
-            warnings=[]
-            )
+                      head=head,
+                      body=gv_strs,
+                      warnings=[]
+                      )
 
     @validation_logger
     def val_response_types(self):
@@ -492,21 +492,21 @@ class CourseValid(VideoMixin, ReportIOMixin):
         problems = [i for i in self.items if i.category == "problem"]
         # Типы ответов. Взяты из common/lib/capa/capa/tests/test_responsetypes.py
         response_types = ["multiplechoiceresponse",
-            "truefalseresponse",
-            "imageresponse",
-            "symbolicresponse",
-            "optionresponse",
-            "formularesponse",
-            "stringresponse",
-            "coderesponse",
-            "choiceresponse",
-            "javascriptresponse",
-            "numericalresponse",
-            "customresponse",
-            "schematicresponse",
-            "annotationresponse",
-            "choicetextresponse",
-        ]
+                          "truefalseresponse",
+                          "imageresponse",
+                          "symbolicresponse",
+                          "optionresponse",
+                          "formularesponse",
+                          "stringresponse",
+                          "coderesponse",
+                          "choiceresponse",
+                          "javascriptresponse",
+                          "numericalresponse",
+                          "customresponse",
+                          "schematicresponse",
+                          "annotationresponse",
+                          "choicetextresponse",
+                          ]
         response_counts = dict((t, 0) for t in response_types)
         for prob in problems:
             text = prob.get_html()
@@ -517,7 +517,7 @@ class CourseValid(VideoMixin, ReportIOMixin):
                     response_counts[resp] += 1
                     out.append(resp)
         name = _("Response types")
-        head = [_("Type"),_("Counts")]
+        head = [_("Type"), _("Counts")]
         rt_strs = []
         for resp in response_types:
             if response_counts[resp]:
@@ -532,10 +532,10 @@ class CourseValid(VideoMixin, ReportIOMixin):
                 counted_num=sum(response_counts.values()), problems_num=len(problems)
             ))
         return Report(name=name,
-            head=head,
-            body=rt_strs,
-            warnings=warnings
-        )
+                      head=head,
+                      body=rt_strs,
+                      warnings=warnings
+                      )
 
     @validation_logger
     def val_advanced_modules(self):
@@ -550,15 +550,15 @@ class CourseValid(VideoMixin, ReportIOMixin):
                       head=head,
                       body=advanced_modules,
                       warnings=[]
-        )
+                      )
 
     @validation_logger
     def val_special_exams(self):
-        sequentials = [i for i in self.items if i.category=='sequential']
+        sequentials = [i for i in self.items if i.category == 'sequential']
         special_exams = [i for i in sequentials if self._check_special_exam(i)]
-        head = [_("Exam name"),_("Exam chapter"),_("Grade name"), _("Start date"),
-                  _("Duration limit"), _("Due date"), _("Is proctored exam"),
-                  ]
+        head = [_("Exam name"), _("Exam chapter"), _("Grade name"), _("Start date"),
+                _("Duration limit"), _("Due date"), _("Is proctored exam"),
+                ]
         body = []
         for se in special_exams:
             name = se.display_name
@@ -566,7 +566,7 @@ class CourseValid(VideoMixin, ReportIOMixin):
             grade = unicode(se.format)
             start = str(se.start)
             if se.is_time_limited:
-                duration = self.format_timdelta(timedelta(minutes=se.default_time_limit_minutes))
+                duration = self.format_timedelta(timedelta(minutes=se.default_time_limit_minutes))
             else:
                 duration = 'None'
             due_date = str(se.due)
@@ -581,9 +581,10 @@ class CourseValid(VideoMixin, ReportIOMixin):
 
     @validation_logger
     def val_openassessment(self):
-        openassessments = [i for i in self.items if i.category=="openassessment"]
+        openassessments = [i for i in self.items if i.category == "openassessment"]
         additional_info = {}
-        head = [_("Name"), _("Location"), _("Publishing date"), _("Submission start"), _("Submission due"), _("Peer start"), _("Peer due"), _("Cohorts where visible"),
+        head = [_("Name"), _("Location"), _("Publishing date"), _("Submission start"), _("Submission due"),
+                _("Peer start"), _("Peer due"), _("Cohorts where visible"),
                 _("Assessment steps")]
         body = []
         with self.store.bulk_operations(self.course_key):
@@ -604,7 +605,7 @@ class CourseValid(VideoMixin, ReportIOMixin):
             current.append(name)
 
             parent = oa.get_parent()
-            location= u"{}, {}".format(parent.display_name, parent.get_parent().display_name)
+            location = u"{}, {}".format(parent.display_name, parent.get_parent().display_name)
             current.append(location)
 
             publish_date = oa.published_on
@@ -613,8 +614,8 @@ class CourseValid(VideoMixin, ReportIOMixin):
             else:
                 current.append(_("Not published"))
 
-            #start_date = oa.start
-            #current.append(date2str(start_date))
+            # start_date = oa.start
+            # current.append(date2str(start_date))
 
             submission_start = unicode2date(oa.submission_start)
             current.append(date2str(submission_start))
@@ -636,12 +637,12 @@ class CourseValid(VideoMixin, ReportIOMixin):
             current.append(visible_groups)
 
             steps = oa.assessment_steps
-            #current.append(u",".join(str(s) for s in steps))
-            current.append(u",".join(str(s) for s in range(1,len(steps)+1)))
+            # current.append(u",".join(str(s) for s in steps))
+            current.append(u",".join(str(s) for s in range(1, len(steps) + 1)))
 
             body.append(current)
-        self.addtitional_info.update({self.scenarios_names_dict["openassessment"]:additional_info})
-        return Report(name=self.scenarios_names_dict["openassessment"],
+        self.addtitional_info.update({self.scenarios_names["openassessment"]: additional_info})
+        return Report(name=self.scenarios_names["openassessment"],
                       head=head,
                       body=body,
                       warnings=[]
