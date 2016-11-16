@@ -99,8 +99,10 @@
     <script type="text/javascript">
         require(["jquery"], function ($) {
             $(document).ready(function () {
-                $(".form-validation input[value=old-validation]").prop("checked", false);
-                $(".form-validation input[value=new-validation]").prop("checked", true);
+                var input_new = $(".form-validation input[value=new-validation]");
+                input_new.prop("checked", true);
+                type_of_form(input_new.get(0));
+
             });
         });
 
@@ -131,10 +133,14 @@
             if (chosen_radio.value == "old-validation") {
                 $('.form-validation fieldset.new-validation-options').attr('disabled', true);
                 $('.form-validation select.old-validation-options').attr('disabled', false);
+                $(".form-validation input[type=submit]").attr('value', '${_("Load validation")}');
+
             }
             if (chosen_radio.value == "new-validation") {
                 $('.form-validation fieldset.new-validation-options').attr('disabled', false);
                 $('.form-validation select.old-validation-options').attr('disabled', true);
+                $(".form-validation input[type=submit]").attr('value', '${_("Validate Course")}');
+
             }
         }
     </script>
