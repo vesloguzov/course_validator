@@ -151,7 +151,7 @@
         <div class="introduction">
             <h2 class="title">${_("About Course Validation")}</h2>
             <p>
-                ${_("This tool is designed to check course before publishing. Different inspections and checks are being performed and then the report will be formed, shown to you and saved. Perhaps validation will take a little time.")}
+                ${_('This tool is designed to check course before publishing. Different inspections and checks are being performed and then the report will be formed, shown to you and saved. Perhaps validation will take a little time.')}
             </p>
 
 
@@ -159,18 +159,17 @@
                   action="javascript:void(null);">
                 <input type="hidden" name="csrfmiddlewaretoken" value="${ csrf }" />
                 <fieldset class="form-entirely">
-                    <h2 class="title">${_("Validation")}</h2>
+                    <h1 class="title">${_("Validation")}</h1>
+                    <h1 class="subtitle">${_("Action type")}</h1>
                     <input name="type-of-form" type="radio" value="new-validation" checked
                            onclick="type_of_form(this)">${_("Proceed new validation")}<br>
-                    % if saved_reports:
                         <input name="type-of-form" type="radio" value="old-validation"
-                               onclick="type_of_form(this)">${_("Load previous validation")}<br>
-                    % else:
-                        <p>
-                            ${_("This course have never been checked.")}
-                        </p>
-                    % endif
+                            % if not saved_reports:
+                                disabled="disabled"
+                            % endif
+                         onclick="type_of_form(this)">${_("Load previous validation")}<br>
                     <fieldset class="new-validation-options">
+                        <h1 class="subtitle">${_("Independent validations")}</h1>
                         <table class="form-options-table">
                             % for option in info['validate_options']:
                                 <tr>
