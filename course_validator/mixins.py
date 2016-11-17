@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
+import codecs
 import datetime
+from datetime import timedelta as td
+from django.utils.translation import ugettext as _
 import json
 import logging
-import urllib
-from datetime import timedelta as td
-
-import codecs
 import os
-from django.utils.translation import ugettext as _
-from .utils import validation_logger
-from course_validator.utils import Report
+import urllib
+from .utils import validation_logger, Report
+from .settings import *
 
 
 class VideoMixin:
@@ -31,10 +30,9 @@ class VideoMixin:
         Returns: 1, Длительность
         или      0, текст ошибки
         """
-        api_key = "AIzaSyCnxGGegKJ1_R-cEVseGUrAcFff5VHXgZ0"
-        searchUrl = "https://www.googleapis.com/youtube/v3/videos?id=" + video_id + "&key=" + api_key + "&part=contentDetails"
+        search_url = VALIDATOR_YOUTUBE_PATTERN.format(video_id=video_id)
         try:
-            response = urllib.urlopen(searchUrl).read()
+            response = urllib.urlopen(search_url).read()
         except IOError:
             return 0, _("No response from server.")
         data = json.loads(response)
@@ -290,3 +288,6 @@ class ReportIOMixin():
         saved_reports = [processing(x) for x in report_files]
         saved_reports_sorted = sorted(saved_reports, key=lambda x: x.dict["date"], reverse=True)
         return [s.readable() for s in saved_reports_sorted]
+
+
+
