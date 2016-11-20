@@ -375,12 +375,11 @@ msgstr ""
 msgid "Action type"
 msgstr "Тип действия"
 
-#: edx-course-validator/course_validator/vhtml.py:165
 msgid "Proceed new validation"
-msgstr "Выполнить проверку"
+msgstr "Выполнить новую проверку"
 
 msgid "Load previous validation"
-msgstr "Загрузить последнюю проверку"
+msgstr "Загрузить предыдущую проверку"
 
 #: edx-course-validator/course_validator/vhtml.py:172
 msgid "Validation scenarios"
