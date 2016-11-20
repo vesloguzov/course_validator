@@ -160,3 +160,4 @@ MAX_VIDEO_DURATION = 3600
 VALIDATOR_YOUTUBE_API_KEY = "AIzaSyCnxGGegKJ1_R-cEVseGUrAcFff5VHXgZ0"
 VALIDATOR_YOUTUBE_PATTERN = "https://www.googleapis.com/youtube/v3/videos?id={video_id}&key=" + \
                   "{api_key}&part=contentDetails".format(api_key=VALIDATOR_YOUTUBE_API_KEY)
+INSTALLED_APPS = []

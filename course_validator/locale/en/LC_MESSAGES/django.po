@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-10-10 16:40+0000\n"
+"POT-Creation-Date: 2016-11-19 08:22-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,268 +17,334 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: course_validator/utils.py:19
-msgid "No course root in {}"
-msgstr ""
-
-#: course_validator/validator.py:43
+#: edx-course-validator/course_validator/mixins.py:37
 msgid "No response from server."
 msgstr ""
 
-#: course_validator/validator.py:46
+#: edx-course-validator/course_validator/mixins.py:40
 msgid "Error occured while video duration check:{}"
 msgstr ""
 
-#: course_validator/validator.py:49
+#: edx-course-validator/course_validator/mixins.py:43
 msgid "Can't find video with such id on youtube."
 msgstr ""
 
-#: course_validator/validator.py:63
+#: edx-course-validator/course_validator/mixins.py:57
 msgid "Can't check edx video id: no api"
 msgstr ""
 
-#: course_validator/validator.py:68
+#: edx-course-validator/course_validator/mixins.py:62
 msgid "No video for this edx_video_id:{}"
 msgstr ""
 
-#: course_validator/validator.py:69
+#: edx-course-validator/course_validator/mixins.py:63
 msgid "Error: didn't get duration from server"
 msgstr ""
 
-#: course_validator/validator.py:186
-msgid "This report was not saved!"
-msgstr ""
-
-#: course_validator/validator.py:256
-msgid "Api is not set up. Contact your administrator"
-msgstr ""
-
-#: course_validator/validator.py:265
-msgid "No source for video '{name}' in '{vertical}' "
-msgstr ""
-
-#: course_validator/validator.py:287
-msgid "Video {} is longer than 3600 secs"
-msgstr ""
-
-#: course_validator/validator.py:297
-msgid "Video name"
-msgstr ""
-
-#: course_validator/validator.py:297
-msgid "Video duration(sum: {})"
-msgstr ""
-
-#: course_validator/validator.py:298
-msgid "Chapter name"
-msgstr ""
-
-#: course_validator/validator.py:298
-msgid "Chapter summary video time"
-msgstr ""
-
-#: course_validator/validator.py:299
-msgid "Video full"
-msgstr ""
-
-#: course_validator/validator.py:304
-msgid "Video short"
-msgstr ""
-
-#: course_validator/validator.py:335
-msgid "Error occured during weight summation"
-msgstr ""
-
-#: course_validator/validator.py:337 course_validator/validator.py:630
-msgid "Grade name"
-msgstr ""
-
-#: course_validator/validator.py:337
-msgid "Grade count"
-msgstr ""
-
-#: course_validator/validator.py:337
-msgid "Grade kicked"
-msgstr ""
-
-#: course_validator/validator.py:337
-msgid "Grade weight"
-msgstr ""
-
-#: course_validator/validator.py:341
-msgid "Tasks weight sum({}) is not equal to 100"
-msgstr ""
-
-#: course_validator/validator.py:348
-msgid "Task type '{name}': supposed to be {n1}, found in course {n2}"
-msgstr ""
-
-#: course_validator/validator.py:354
-msgid "Task of type '{}' in course, no such task type in grading settings"
-msgstr ""
-
-#: course_validator/validator.py:356
+#: edx-course-validator/course_validator/settings.py:31
 msgid "Grade"
 msgstr ""
 
-#: course_validator/validator.py:373
-msgid "Group name"
+#: edx-course-validator/course_validator/settings.py:32
+msgid "Special exams"
 msgstr ""
 
-#: course_validator/validator.py:373
-msgid "Group used"
+#: edx-course-validator/course_validator/settings.py:33
+msgid "Advanced Modules"
 msgstr ""
 
-#: course_validator/validator.py:376
+#: edx-course-validator/course_validator/settings.py:34
 msgid "Group"
 msgstr ""
 
-#: course_validator/validator.py:409
-msgid "others"
-msgstr ""
-
-#: course_validator/validator.py:410
-msgid "Module type"
-msgstr ""
-
-#: course_validator/validator.py:410
-msgid "Module count"
-msgstr ""
-
-#: course_validator/validator.py:417
-msgid "Block '{name}'({cat}) doesn't have any inner blocks or tasks"
-msgstr ""
-
-#: course_validator/validator.py:420
+#: edx-course-validator/course_validator/settings.py:35
 msgid "Module"
 msgstr ""
 
-#: course_validator/validator.py:443
+#: edx-course-validator/course_validator/settings.py:36
+#: edx-course-validator/course_validator/validator.py:290
+msgid " Cohorts "
+msgstr ""
+
+#: edx-course-validator/course_validator/settings.py:37
+msgid "Proctoring"
+msgstr ""
+
+#: edx-course-validator/course_validator/settings.py:38
+msgid "Dates"
+msgstr ""
+
+#: edx-course-validator/course_validator/settings.py:39
+msgid "Items visibility by group"
+msgstr ""
+
+#: edx-course-validator/course_validator/settings.py:40
+msgid "Response types"
+msgstr ""
+
+#: edx-course-validator/course_validator/settings.py:41
+msgid "Video full"
+msgstr ""
+
+#: edx-course-validator/course_validator/settings.py:42
+msgid "Open Response Assessment"
+msgstr ""
+
+#: edx-course-validator/course_validator/settings.py:83
+#: edx-course-validator/course_validator/settings.py:112
+msgid "Section"
+msgstr ""
+
+#: edx-course-validator/course_validator/settings.py:84
+#: edx-course-validator/course_validator/settings.py:113
+msgid "Subsection"
+msgstr ""
+
+#: edx-course-validator/course_validator/settings.py:85
+#: edx-course-validator/course_validator/settings.py:114
+msgid "Unit"
+msgstr ""
+
+#: edx-course-validator/course_validator/settings.py:86
+#: edx-course-validator/course_validator/settings.py:115
+msgid "Problem"
+msgstr ""
+
+#: edx-course-validator/course_validator/settings.py:87
+#: edx-course-validator/course_validator/settings.py:116
+msgid "Video"
+msgstr ""
+
+#: edx-course-validator/course_validator/settings.py:89
+#: edx-course-validator/course_validator/settings.py:118
+msgid "Other"
+msgstr ""
+
+#: edx-course-validator/course_validator/validator.py:57
+msgid "Api is not set up. Contact your administrator"
+msgstr ""
+
+#: edx-course-validator/course_validator/validator.py:66
+msgid "No source for video '{name}' in '{vertical}' "
+msgstr ""
+
+#: edx-course-validator/course_validator/validator.py:88
+msgid "Video {} is longer than 3600 secs"
+msgstr ""
+
+#: edx-course-validator/course_validator/validator.py:98
+msgid "Video name"
+msgstr ""
+
+#: edx-course-validator/course_validator/validator.py:98
+msgid "Video duration(sum: {})"
+msgstr ""
+
+#: edx-course-validator/course_validator/validator.py:99
+msgid "Chapter name"
+msgstr ""
+
+#: edx-course-validator/course_validator/validator.py:99
+msgid "Chapter summary video time"
+msgstr ""
+
+#: edx-course-validator/course_validator/validator.py:105
+msgid "Video short"
+msgstr ""
+
+#: edx-course-validator/course_validator/validator.py:137
+msgid "Error occured during weight summation"
+msgstr ""
+
+#: edx-course-validator/course_validator/validator.py:139
+#: edx-course-validator/course_validator/validator.py:419
+msgid "Grade name"
+msgstr ""
+
+#: edx-course-validator/course_validator/validator.py:139
+msgid "Grade count"
+msgstr ""
+
+#: edx-course-validator/course_validator/validator.py:139
+msgid "Grade kicked"
+msgstr ""
+
+#: edx-course-validator/course_validator/validator.py:139
+msgid "Grade weight"
+msgstr ""
+
+#: edx-course-validator/course_validator/validator.py:143
+msgid "Tasks weight sum({}) is not equal to 100"
+msgstr ""
+
+#: edx-course-validator/course_validator/validator.py:150
+msgid "Task type '{name}': supposed to be {n1}, found in course {n2}"
+msgstr ""
+
+#: edx-course-validator/course_validator/validator.py:156
+msgid "Task of type '{}' in course, no such task type in grading settings"
+msgstr ""
+
+#: edx-course-validator/course_validator/validator.py:176
+msgid "Group name"
+msgstr ""
+
+#: edx-course-validator/course_validator/validator.py:176
+msgid "Group used"
+msgstr ""
+
+#: edx-course-validator/course_validator/validator.py:188
+msgid "Module type"
+msgstr ""
+
+#: edx-course-validator/course_validator/validator.py:188
+msgid "Module count"
+msgstr ""
+
+#: edx-course-validator/course_validator/validator.py:224
+msgid "Block '{name}'({cat}) doesn't have any inner blocks or tasks"
+msgstr ""
+
+#: edx-course-validator/course_validator/validator.py:250
 msgid ""
 "'{n1}' block has start date {d1}, but his parent '{n2}' has later start date "
 "{d2}"
 msgstr ""
 
-#: course_validator/validator.py:453
+#: edx-course-validator/course_validator/validator.py:260
 msgid "All course release dates are later than {}"
 msgstr ""
 
-#: course_validator/validator.py:457
+#: edx-course-validator/course_validator/validator.py:264
 msgid "All stuff by tomorrow is not published"
 msgstr ""
 
-#: course_validator/validator.py:459
+#: edx-course-validator/course_validator/validator.py:266
 msgid "No visible for students stuff by tomorrow"
 msgstr ""
 
-#: course_validator/validator.py:460
-msgid "Dates"
-msgstr ""
-
-#: course_validator/validator.py:480
+#: edx-course-validator/course_validator/validator.py:288
 msgid "Cohorts are disabled"
 msgstr ""
 
-#: course_validator/validator.py:481 course_validator/validator.py:482
-msgid " Cohorts "
-msgstr ""
-
-#: course_validator/validator.py:482
+#: edx-course-validator/course_validator/validator.py:290
 msgid "Population"
 msgstr ""
 
-#: course_validator/validator.py:491
+#: edx-course-validator/course_validator/validator.py:300
 msgid "Available proctoring services"
 msgstr ""
 
-#: course_validator/validator.py:492 course_validator/validator.py:494
+#: edx-course-validator/course_validator/validator.py:301
+#: edx-course-validator/course_validator/validator.py:303
 msgid "Not defined"
 msgstr ""
 
-#: course_validator/validator.py:493
+#: edx-course-validator/course_validator/validator.py:302
 msgid "Proctoring Service"
 msgstr ""
 
-#: course_validator/validator.py:501
-msgid "Proctoring"
-msgstr ""
-
-#: course_validator/validator.py:502
+#: edx-course-validator/course_validator/validator.py:311
 msgid "Parameter"
 msgstr ""
 
-#: course_validator/validator.py:502
+#: edx-course-validator/course_validator/validator.py:311
 msgid "Value"
 msgstr ""
 
-#: course_validator/validator.py:515
-msgid "Items visibility by group"
-msgstr ""
-
-#: course_validator/validator.py:516
+#: edx-course-validator/course_validator/validator.py:325
 msgid "Item type"
 msgstr ""
 
-#: course_validator/validator.py:516
+#: edx-course-validator/course_validator/validator.py:325
+#: edx-course-validator/course_validator/validator.py:509
 msgid "Usual student"
 msgstr ""
 
-#: course_validator/validator.py:592
-msgid "Response types"
-msgstr ""
-
-#: course_validator/validator.py:593
+#: edx-course-validator/course_validator/validator.py:370
 msgid "Type"
 msgstr ""
 
-#: course_validator/validator.py:593
+#: edx-course-validator/course_validator/validator.py:370
 msgid "Counts"
 msgstr ""
 
-#: course_validator/validator.py:598
+#: edx-course-validator/course_validator/validator.py:388
 msgid "Responses sum"
 msgstr ""
 
-#: course_validator/validator.py:599
+#: edx-course-validator/course_validator/validator.py:389
 msgid "Problems sum"
 msgstr ""
 
-#: course_validator/validator.py:604
+#: edx-course-validator/course_validator/validator.py:394
 msgid "Categorized {counted_num} problems out of {problems_num}"
 msgstr ""
 
-#: course_validator/validator.py:619
-msgid "Advanced Modules"
-msgstr ""
-
-#: course_validator/validator.py:620
+#: edx-course-validator/course_validator/validator.py:410
 msgid "Module name"
 msgstr ""
 
-#: course_validator/validator.py:630
+#: edx-course-validator/course_validator/validator.py:419
 msgid "Exam name"
 msgstr ""
 
-#: course_validator/validator.py:630
+#: edx-course-validator/course_validator/validator.py:419
 msgid "Exam chapter"
 msgstr ""
 
-#: course_validator/validator.py:630
+#: edx-course-validator/course_validator/validator.py:419
 msgid "Start date"
 msgstr ""
 
-#: course_validator/validator.py:631
+#: edx-course-validator/course_validator/validator.py:420
 msgid "Duration limit"
 msgstr ""
 
-#: course_validator/validator.py:631
+#: edx-course-validator/course_validator/validator.py:420
 msgid "Due date"
 msgstr ""
 
-#: course_validator/validator.py:631
+#: edx-course-validator/course_validator/validator.py:420
 msgid "Is proctored exam"
 msgstr ""
 
-#: course_validator/validator.py:647
-msgid "Special exams"
+#: edx-course-validator/course_validator/validator.py:459
+msgid "Name"
+msgstr ""
+
+#: edx-course-validator/course_validator/validator.py:459
+msgid "Location"
+msgstr ""
+
+#: edx-course-validator/course_validator/validator.py:459
+msgid "Publishing date"
+msgstr ""
+
+#: edx-course-validator/course_validator/validator.py:459
+msgid "Submission start"
+msgstr ""
+
+#: edx-course-validator/course_validator/validator.py:459
+msgid "Submission due"
+msgstr ""
+
+#: edx-course-validator/course_validator/validator.py:460
+msgid "Peer start"
+msgstr ""
+
+#: edx-course-validator/course_validator/validator.py:460
+msgid "Peer due"
+msgstr ""
+
+#: edx-course-validator/course_validator/validator.py:460
+msgid "Cohorts where visible"
+msgstr ""
+
+#: edx-course-validator/course_validator/validator.py:461
+msgid "Assessment steps"
+msgstr ""
+
+#: edx-course-validator/course_validator/validator.py:491
+msgid "Not published"
 msgstr ""
