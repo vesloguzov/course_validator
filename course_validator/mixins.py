@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+    # -*- coding: utf-8 -*-
 import codecs
 import datetime
 from datetime import timedelta as td
@@ -234,7 +234,7 @@ class ReportIOMixin():
                 itemn = list(self._unicodize(k) for k in item)
 
         except Exception as e:
-            print("!", e, item)
+            pass
         return itemn
 
     @classmethod
