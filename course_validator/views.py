@@ -4,9 +4,11 @@ from django.core.urlresolvers import reverse
 from django.core.context_processors import csrf
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.http import HttpResponse, JsonResponse
+
 from edxmako.shortcuts import render_to_response
 from opaque_keys.edx.keys import CourseKey
 from xmodule.modulestore.django import modulestore
+
 from .validator import CourseValid
 
 __all__ = ["course_validator_handler"]

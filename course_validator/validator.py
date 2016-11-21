@@ -1,17 +1,19 @@
 # -*- coding: utf-8 -*-
 
-from contentstore.course_group_config import GroupConfiguration
-from contentstore.utils import reverse_usage_url
-from collections import Counter
-from django.utils.translation import ugettext as _
 import datetime
 from datetime import timedelta
 import json
 import logging
+
+from contentstore.course_group_config import GroupConfiguration
+from contentstore.utils import reverse_usage_url
+from collections import Counter
+from django.utils.translation import ugettext as _
 from models.settings.course_grading import CourseGradingModel
 from opaque_keys.edx.keys import CourseKey
 from openedx.core.djangoapps.course_groups.cohorts import get_course_cohorts, get_course_cohort_settings
 from xmodule.modulestore.django import modulestore
+
 from .mixins import VideoMixin, ReportIOMixin
 from .settings import *
 from .utils import Report, validation_logger

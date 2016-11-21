@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
-import datetime
+
 from collections import namedtuple
+import datetime
+from functools import wraps
+import logging
 import os
 import time
-import logging
-from functools import wraps
+
+from .settings import PATH_SAVED_REPORTS_TEMPLATE
 
 Report = namedtuple("Report", ["name", "head", "body", "warnings"])
 
@@ -68,7 +71,6 @@ def find_course_validation(course_key, path_saved_reports, parameters=None):
 
 
 def get_path_saved_reports(course_key_string):
-    from .settings import PATH_SAVED_REPORTS_TEMPLATE
     attributes = course_key_string.split(':')[-1]
     organization, course_number, course_run = attributes.split('+')
     return PATH_SAVED_REPORTS_TEMPLATE.format(organization=organization,

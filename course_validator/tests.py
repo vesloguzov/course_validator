@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
+from datetime import datetime, timedelta
+
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory, ItemFactory
-from datetime import datetime, timedelta
-from validator import CourseValid
 from django.conf import settings
 from models.settings.course_grading import CourseGradingModel
-from .utils import _print_all
-from ..contentstore.views.tests.test_item import ItemTest
-from ..contentstore.utils import reverse_usage_url
+from cms.djangoapps.contentstore.views.tests.test_item import ItemTest
+from cms.djangoapps.contentstore.utils import reverse_usage_url
+
+from validator import CourseValid
 
 EVMS_URL = "https://evms.openedu.ru"
 EVMS_API_KEY =  "bfuiy3748y5hgfurgh3ri28h"

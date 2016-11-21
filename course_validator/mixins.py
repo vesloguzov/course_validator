@@ -1,12 +1,14 @@
-    # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 import codecs
 import datetime
 from datetime import timedelta as td
-from django.utils.translation import ugettext as _
 import json
 import logging
 import os
 import urllib
+
+from django.utils.translation import ugettext as _
+
 from .utils import validation_logger, Report
 from .settings import *
 
