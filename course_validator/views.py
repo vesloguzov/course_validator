@@ -29,24 +29,24 @@ def course_validator_handler(request, course_key_string=None):
 
     execute_url = reverse_validator_course_url(course_key)
     context = dict()
-    CV = CourseValid(request, course_key_string)
+    cv = CourseValid(request, course_key_string)
 
     if request.method == 'POST':
         data = None
         form_data = dict(request.POST)
         type_ = form_data.pop("type-of-form")[0]
         if type_ == u'new-validation':
-            data = CV.get_new_validation(form_data)
+            data = cv.get_new_validation(form_data)
         elif type_ == u'old-validation':
-            data = CV.get_old_validation(form_data)
+            data = cv.get_old_validation(form_data)
         context['sections'] = data
-        additional_info = CV.get_additional_info()
+        additional_info = cv.get_additional_info()
         context['info'] = additional_info
         res = render_to_response("results.html", context)
         return JsonResponse({"html": str(res.content)})
 
     saved_reports = CourseValid.get_saved_reports_for_course(course_key_string)
-    additional_info = CV.get_additional_info()
+    additional_info = cv.get_additional_info()
     context.update({
         "csrf": csrf_token,
         "context_course": course_module,

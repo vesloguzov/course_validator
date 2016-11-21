@@ -42,8 +42,8 @@ class VideoMixin:
         if not len(all_data):
             return 0, _("Can't find video with such id on youtube.")
 
-        contentDetails = all_data[0]["contentDetails"]
-        duration = self._youtube_time_expand(contentDetails["duration"])
+        content_details = all_data[0]["contentDetails"]
+        duration = self._youtube_time_expand(content_details["duration"])
         dur = td(seconds=duration)
         return 1, dur
 
@@ -202,7 +202,7 @@ class ReportIOMixin():
     def load_validation_report(self, path, delim=u'\t'):
         reports = []
         with codecs.open(path, "r", encoding="utf-8") as file:
-            header = file.readline()  # Don't need it actually
+            header = file.readline()  # Don't need header actually
             for line in file:
                 report_fields = [json.loads(field) for field in line.strip().split(delim)]
                 kwargs = dict((Report._fields[k], report_fields[k]) for k, _ in enumerate(Report._fields))
@@ -219,23 +219,23 @@ class ReportIOMixin():
         return False
 
     def _unicodize(self, item):
-        itemn = item
+        item_unicoded = item
         try:
             if isinstance(item, str) or isinstance(item, unicode):
                 try:
-                    itemn = unicode(item, encoding="utf-8")
+                    item_unicoded = unicode(item, encoding="utf-8")
                 except TypeError:
-                    itemn = item
+                    item_unicoded = item
             elif isinstance(item, dict):
-                itemn = dict()
+                item_unicoded = dict()
                 for k in item.keys():
-                    itemn[k] = self._unicodize(item[k])
+                    item_unicoded[k] = self._unicodize(item[k])
             elif isinstance(item, list):
-                itemn = list(self._unicodize(k) for k in item)
+                item_unicoded = list(self._unicodize(k) for k in item)
 
-        except Exception as e:
+        except Exception:
             pass
-        return itemn
+        return item_unicoded
 
     @classmethod
     def get_path_saved_reports(cls, course_key_string):

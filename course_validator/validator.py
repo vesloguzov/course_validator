@@ -206,7 +206,7 @@ class Validations:
 
         # Словарь категория:количество для категорий с подробным выводом
         verbose_dict = dict((k, (all_cat_dict[k])) for k in primary_cat + additional_count_cat)
-        # Словарь категория:количество для категорий для элементов без подробного вывода
+        # Словарь категория:количество для категорий без подробного вывода
         silent_dict = {c: all_cat_dict[c] for c in secondary_cat}
         silent_dict_sum = sum(silent_dict.values())
 
@@ -424,12 +424,12 @@ class Validations:
             """
             Проверяет является ли объект seq специальным экзаменом,
             т.е. верно ли хотя бы одно поле
-            :param seq:
-            :return:
+            :param seq: Sequential
+            :return: bool
             """
             is_special_exam_fields = self.is_special_exam_fields
             answ = sum([getattr(seq, y, False) for y in is_special_exam_fields])
-            return answ
+            return bool(answ)
 
         sequentials = [i for i in self.items if i.category == 'sequential']
         special_exams = [i for i in sequentials if _check_special_exam(i)]
