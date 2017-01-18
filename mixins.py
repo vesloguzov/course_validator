@@ -11,7 +11,7 @@ from django.utils.translation import ugettext as _
 
 from .utils import validation_logger, Report
 from .settings import *
-
+from .models import CourseValidation
 
 class VideoMixin:
     """
@@ -190,11 +190,15 @@ class ReportIOMixin():
             fields = Report._fields
             with codecs.open(report_abspath, "w", encoding="utf-8") as file:
                 header = delim.join(fields)
-                file.write(header.encode("utf8") + "\n")
+                filetext = (header.encode("utf8") + "\n")
                 for pr in dict_datas:
                     line = delim.join((json.dumps(self._unicodize(pr[k]), ensure_ascii=False)) for k in fields)
-                    file.write(line + "\n")
-
+                    filetext += (line + "\n")
+                file.write(filetext)
+            CourseValidation.objects.create(course_id=self.course_key_string,
+                                            user=self.request.user.username,
+                                            full_validation_report=filetext,
+                                            )
             logging.info("Report is saved:{}".format(report_abspath))
 
         except Exception as e:
