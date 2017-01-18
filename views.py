@@ -44,7 +44,7 @@ def course_validator_handler(request, course_key_string=None):
         context['sections'] = data
         additional_info = cv.get_additional_info()
         context['info'] = additional_info
-        res = render_to_response("results.html", context)
+        res = render_to_response("validator_results.html", context)
         return JsonResponse({"html": str(res.content)})
 
     saved_reports = CourseValid.get_saved_reports_for_course(course_key_string)
