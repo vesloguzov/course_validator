@@ -158,6 +158,8 @@
             <form method="POST" class="form-validation" id="form-new-validation" name="form-new-validation"
                   action="javascript:void(null);">
                 <input type="hidden" name="csrfmiddlewaretoken" value="${ csrf }" />
+                <input type="hidden" name="course-id" value="${ course_id }" />
+
                 <fieldset class="form-entirely">
                     <h1 class="title">${_("Validation")}</h1>
                     <h1 class="subtitle">${_("Action type")}</h1>

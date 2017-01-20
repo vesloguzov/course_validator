@@ -51,6 +51,7 @@ def course_validator_handler(request, course_key_string=None):
     additional_info = cv.get_additional_info()
     context.update({
         "csrf": csrf_token,
+        "course_id":course_key_string,
         "context_course": course_module,
         "validate_url": execute_url,
         "saved_reports": saved_reports,

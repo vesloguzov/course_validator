@@ -15,7 +15,7 @@ from opaque_keys.edx.keys import CourseKey
 from openedx.core.djangoapps.course_groups.cohorts import get_course_cohorts, get_course_cohort_settings
 from xmodule.modulestore.django import modulestore, SignalHandler
 
-from .mixins import VideoMixin, ReportIOMixin
+from .mixins import VideoMixin, ReportIOMixinDB
 from .settings import *
 from .utils import Report, validation_logger
 
@@ -524,7 +524,7 @@ class Validations:
                       )
 
 
-class CourseValid(VideoMixin, ReportIOMixin, Validations):
+class CourseValid(VideoMixin, ReportIOMixinDB, Validations):
     """
     Сюда вынесены методы, касающиеся ответов на запросы и процесса выполнения проверки в общем
     """
@@ -563,8 +563,8 @@ class CourseValid(VideoMixin, ReportIOMixin, Validations):
 
     def get_old_validation(self, form_data):
         readable = form_data["previous-report"][0]
-        path = self.get_path_for_readable(readable)
-        self.reports = self.load_validation_report(path)
+        course_id = form_data["course-id"][0]
+        self.reports = self.load_validation_report(course_id, readable)
         return self.get_sections_for_rendering()
 
     def _validate_scenarios(self, scenarios=None):
