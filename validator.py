@@ -13,11 +13,12 @@ from django.utils.translation import ugettext as _
 from cms.djangoapps.models.settings.course_grading import CourseGradingModel
 from opaque_keys.edx.keys import CourseKey
 from openedx.core.djangoapps.course_groups.cohorts import get_course_cohorts, get_course_cohort_settings
-from xmodule.modulestore.django import modulestore, SignalHandler
+from xmodule.modulestore.django import modulestore
 
 from .mixins import VideoMixin, ReportIOMixinDB
 from .settings import *
 from .utils import Report, validation_logger
+from .analyzer import ChangeAnalyzer
 
 
 class Validations:

@@ -50,10 +50,9 @@ def listen_for_item_delete(**kwargs):  # pylint: disable=unused-argument
     """
     Catches the item was deleted
     """
-    from .models import CourseUpdate
-    # Этот импорт помещен здесь, т.к. бэкенды загружаются раньше course_validator и иначе выбрасывается Exception
-
     try:
+        # Этот импорт помещен здесь, т.к. бэкенды загружаются раньше course_validator и иначе выбрасывается Exception
+        from course_validator.models import Course, CourseUpdate
         usage_key = kwargs['usage_key']
         if usage_key.branch:
             usage_key = usage_key.for_branch(None)

@@ -10,7 +10,7 @@ from opaque_keys.edx.keys import CourseKey
 from xmodule.modulestore.django import modulestore
 
 from .validator import CourseValid
-
+from .analyzer import ChangeAnalyzer
 __all__ = ["course_validator_handler"]
 
 
@@ -47,6 +47,7 @@ def course_validator_handler(request, course_key_string=None):
         res = render_to_response("validator_results.html", context)
         return JsonResponse({"html": str(res.content)})
 
+    analyzer = ChangeAnalyzer(course_key_string)
     saved_reports = CourseValid.get_saved_reports_for_course(course_key_string)
     additional_info = cv.get_additional_info()
     context.update({
@@ -55,6 +56,7 @@ def course_validator_handler(request, course_key_string=None):
         "context_course": course_module,
         "validate_url": execute_url,
         "saved_reports": saved_reports,
+        "analyzer_report":analyzer.report(),
         'info': additional_info
     })
     return render_to_response("validator.html", context)

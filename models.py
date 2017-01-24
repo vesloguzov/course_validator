@@ -61,11 +61,15 @@ class CourseValidation(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.video_keys:
-            items = modulestore().get_items(CourseKey.from_string(self.course.course_id))
-            videos = [i for i in items if i.category == "video"]
-            keys = [str(i.location) for i in videos]
+            keys = self.collect_video_keys(course_id=self.course.course_id)
             self.video_keys = ",".join(keys)
         super(CourseValidation, self).save(*args, **kwargs)
+
+    @classmethod
+    def collect_video_keys(cls, course_id):
+        items = modulestore().get_items(CourseKey.from_string(course_id))
+        videos = [i for i in items if i.category == "video"]
+        return [str(i.location) for i in videos]
 
 
 class CourseUpdateTypes(object):
