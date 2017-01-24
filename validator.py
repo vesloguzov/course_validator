@@ -170,7 +170,7 @@ class Validations:
     def val_group(self):
         """Проверка наличия и использования в курсе групп"""
         with self.store.bulk_operations(self.course_key):
-            course = self.store.get_course(self.course_key)
+            course = self.course
             content_group_configuration = GroupConfiguration.get_or_create_content_group(self.store, course)
         groups = content_group_configuration["groups"]
 
@@ -278,7 +278,7 @@ class Validations:
     @validation_logger
     def val_cohorts(self):
         """Проверка наличия в курсе когорт, для каждой вывод их численности либо сообщение об их отсутствии"""
-        course = self.store.get_course(self.course_key)
+        course = self.course
         cohorts = get_course_cohorts(course)
         names = [getattr(x, "name") for x in cohorts]
         users = [getattr(x, "users").all() for x in cohorts]
@@ -300,7 +300,7 @@ class Validations:
     @validation_logger
     def val_proctoring(self):
         """Проверка наличия proctored экзаменов"""
-        course = self.store.get_course(self.course_key)
+        course = self.course
         check_avail_proctor_service = [_("Available proctoring services"),
                                        getattr(course, "available_proctoring_services", _("Not defined"))]
         check_proctor_service = [_("Proctoring Service"),
@@ -322,7 +322,7 @@ class Validations:
     def val_items_visibility_by_group(self):
         """Составление таблицы видимости элементов для групп"""
         with self.store.bulk_operations(self.course_key):
-            course = self.store.get_course(self.course_key)
+            course = self.course
             content_group_configuration = GroupConfiguration.get_or_create_content_group(self.store, course)
         groups = content_group_configuration["groups"]
         group_names = [g["name"] for g in groups]
@@ -409,7 +409,7 @@ class Validations:
         """
         Выводить все подключенные к OpenEdx модули
         """
-        course = self.store.get_course(self.course_key)
+        course = self.course
         advanced_modules = [[x] for x in course.advanced_modules]
         head = [_("Module name")]
         return Report(name=self.scenarios_names["advanced_modules"],
@@ -468,7 +468,7 @@ class Validations:
         additional_info = {}
         body = []
         with self.store.bulk_operations(self.course_key):
-            course = self.store.get_course(self.course_key)
+            course = self.course
             content_group_configuration = GroupConfiguration.get_or_create_content_group(self.store, course)
         groups = content_group_configuration["groups"]
         conf_id = content_group_configuration["id"]
@@ -537,17 +537,19 @@ class CourseValid(VideoMixin, ReportIOMixinDB, Validations):
     visibility_by_group_categories = VISIBILITY_BY_GROUP_CATEGORIES
     response_types = RESPONSE_TYPES
 
-    def __init__(self, request, course_key_string):
+    def __init__(self, request, course_id):
         self.request = request
         self.store = modulestore()
-        self.course_key_string = course_key_string
-        self.course_key = CourseKey.from_string(course_key_string)
+        self.course_id = course_id
+        self.course_key = CourseKey.from_string(course_id)
         self.items = None
+        self.course = None
         self.reports = []
         self.additional_info = dict()
 
     def get_new_validation(self, form_data):
         self.items = self.store.get_items(self.course_key)
+        self.course = self.store.get_course(self.course_key)
         scenarios = [s for s in form_data.keys() if s in CourseValid.scenarios_names]
         self._validate_scenarios(scenarios)
         self.send_log()
@@ -557,7 +559,7 @@ class CourseValid(VideoMixin, ReportIOMixinDB, Validations):
         info = {
             "costly_options": CourseValid.costly_scenarios,
             "validate_options": CourseValid.scenarios_names,
-            "course_key_string": self.course_key_string,
+            "course_key_string": self.course_id,
         }
         info.update(self.additional_info)
         return info

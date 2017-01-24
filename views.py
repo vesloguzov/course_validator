@@ -26,12 +26,13 @@ def reverse_validator_course_url(course_key):
 def course_validator_handler(request, course_key_string=None):
     """Обработчик url на проверку курса"""
     csrf_token = csrf(request)['csrf_token']
-    course_key = CourseKey.from_string(course_key_string)
+    course_id = course_key_string
+    course_key = CourseKey.from_string(course_id)
     course_module = modulestore().get_course(course_key)
 
     execute_url = reverse_validator_course_url(course_key)
     context = dict()
-    cv = CourseValid(request, course_key_string)
+    cv = CourseValid(request, course_id)
 
     if request.method == 'POST':
         data = None
@@ -47,12 +48,12 @@ def course_validator_handler(request, course_key_string=None):
         res = render_to_response("validator_results.html", context)
         return JsonResponse({"html": str(res.content)})
 
-    analyzer = ChangeAnalyzer(course_key_string)
-    saved_reports = CourseValid.get_saved_reports_for_course(course_key_string)
+    analyzer = ChangeAnalyzer(course_id)
+    saved_reports = CourseValid.get_saved_reports_for_course(course_id)
     additional_info = cv.get_additional_info()
     context.update({
         "csrf": csrf_token,
-        "course_id":course_key_string,
+        "course_id":course_id,
         "context_course": course_module,
         "validate_url": execute_url,
         "saved_reports": saved_reports,
