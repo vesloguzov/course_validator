@@ -116,7 +116,7 @@ class ReportIOMixinDB():
                 filetext += ("\n"+line)
 
             saved = CourseValidation.objects.create(course_id=self.course_key_string,
-                                            user=self.request.user.username,
+                                            username=self.request.user.username,
                                             full_validation_report=filetext,
                                             )
             info = "id:{}, readable:{}, pk:{}".format(self.course_key_string, saved.readable_name, saved.pk)

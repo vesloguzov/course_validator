@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 
 from datetime import datetime
-
 from django.db import models
 from django.utils.translation import ugettext as _
 from django.utils.dateparse import parse_datetime
-from django.dispatch.dispatcher import receiver
-from django.db.models.signals import post_save
-from django.contrib.auth.models import User
 
-from xmodule.modulestore.django import SignalHandler, modulestore
-from openedx.core.djangoapps.course_groups.models import CohortMembership
+from xmodule.modulestore.django import modulestore
+from opaque_keys.edx.keys import CourseKey
+
+
+def now():
+    return datetime.now().replace(microsecond=0)
 
 
 class CourseRelatedManager(models.Manager):
@@ -19,11 +19,12 @@ class CourseRelatedManager(models.Manager):
         course, _created = Course.objects.get_or_create(course_id=course_id)
         return super(CourseRelatedManager,self).create(course=course, *args, **kwargs)
 
+
 class CourseValidationManager(CourseRelatedManager):
     def by_readable_name(self, readable_name, course_id):
-        user, date = readable_name.split(", ")
+        username, date = readable_name.split(", ")
         date = parse_datetime(date)
-        queryset = self.get_queryset().filter(user=user, created_at=date, course__course_id=course_id)
+        queryset = self.get_queryset().filter(username=username, created_at=date, course__course_id=course_id)
         if not queryset:
             return None
         return queryset[0]
@@ -37,26 +38,34 @@ class Course(models.Model):
 
 class CourseValidation(models.Model):
     course = models.ForeignKey(Course, help_text="Course that was validated")
-    created_at = models.DateTimeField(default=datetime.now().replace(microsecond=0),
+    created_at = models.DateTimeField(default=now,
                                         help_text=_("The date when validation was done"))
-    user = models.CharField(max_length=100, blank=True, help_text="User who performed validation")
+    username = models.CharField(max_length=100, blank=True, help_text="User who performed validation")
     is_correct = models.BooleanField(default=False)
     full_validation_report = models.TextField(help_text="JSON-ized validation")
+    video_keys = models.TextField(default="", help_text="All video usage_keys in course for comparison at next validation")
 
     objects = CourseValidationManager()
 
     @classmethod
     def get_course_validations(cls, course_key):
         course_key = str(course_key)
-        validations = CourseValidation.objects.all().filter(course__course_id=course_key)
-        return validations
+        return  CourseValidation.objects.all().filter(course__course_id=course_key)
 
     @property
     def readable_name(self):
-        return u"{user}, {date}".format(user=str(self.user), date=str(self.created_at))
+        return u"{user}, {date}".format(user=str(self.username), date=str(self.created_at))
 
     def __unicode__(self):
         return u"{}, {}".format(self.readable_name, self.course.course_id)
+
+    def save(self, *args, **kwargs):
+        if not self.video_keys:
+            items = modulestore().get_items(CourseKey.from_string(self.course.course_id))
+            videos = [i for i in items if i.category == "video"]
+            keys = [str(i.location) for i in videos]
+            self.video_keys = ",".join(keys)
+        super(CourseValidation, self).save(*args, **kwargs)
 
 
 class CourseUpdateTypes(object):
@@ -67,51 +76,22 @@ class CourseUpdateTypes(object):
     DATES = 'dates' #dates
     COHORTS = 'cohorts' #cohorts - НЕЛЬЗЯ ОТСЛЕДИТЬ - МЕНЯЕТСЯ В LMS
     OTHER = 'other' #proctoring, group, special_exams, advanced_modules
+    CANDIDATE = "candidate" # возможно измененный блок
 
-    TYPE_OF_UPDATE = (
-        PROBLEM_BLOCK,
-        VIDEO_BLOCK,
-        COURSE_PART,
-        GRADE,
-        DATES,
-        COHORTS,
-        OTHER
-    )
+
+    @classmethod
+    def candidate(cls, usage_id):
+        return "{} {}".format(cls.CANDIDATE, usage_id)
 
 
 class CourseUpdate(models.Model, CourseUpdateTypes):
     course = models.ForeignKey(Course)
-    created_at = models.DateTimeField(default=datetime.now().replace(microsecond=0),
+    created_at = models.DateTimeField(default=now,
                                       help_text=_("The date when validation was done"))
-    user = models.CharField(max_length=100, blank=True, help_text="User who performed validation")
-    items = models.TextField()
+    username = models.CharField(max_length=100, blank=True, help_text="User who performed validation")
+    change = models.TextField()
 
     objects = CourseRelatedManager
 
-    @staticmethod
-    @receiver(SignalHandler.item_deleted)
-    def listen_for_item_delete(**kwargs):  # pylint: disable=unused-argument
-        """
-        Catches the signal that a course has been published in Studio
-        """
-        # course = modulestore().get_course(course_key)
-        usage_key = kwargs['usage_key']
-        user_id = kwargs['user_id']
-        user = User.objects.get(id=int(user_id)).username
-        course_key = usage_key.course_key
-        block_type = usage_key.block_type
-        if block_type == "video":
-            type_ = CourseUpdate.VIDEO_BLOCK
-        elif block_type == "problem":
-            type_ = CourseUpdate.VIDEO_BLOCK
-        else:
-            type_ = CourseUpdate.COURSE_PART
-
-        CourseUpdate.objects.create(course_id=course_key, user=user, items=type_)
-
-    """
-    @staticmethod
-    @receiver(post_save, sender=CohortMembership)
-    def remove_user_from_cohort(sender, instance, **kwargs):  # pylint: disable=unused-argument
-        print("COHORT_SIGNAL")\
-    """
+    def __unicode__(self):
+        return u"{}, {}:{}".format(str(self.course.course_id), str(self.created_at), self.change)
