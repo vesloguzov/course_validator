@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 from datetime import datetime
 from django.db import models
 from django.utils.translation import ugettext as _
@@ -73,7 +72,7 @@ class CourseValidation(models.Model):
 
 
 class CourseUpdateTypes(object):
-    PROBLEM_BLOCK = 'nonvideo_block' #module, response_types, ora, items_visibility
+    PROBLEM_BLOCK = 'problem_block' #module, response_types, ora, items_visibility
     VIDEO_BLOCK = 'video_block' #video_full
     COURSE_PART = 'course_part' #module, response_types, ora, items_visibility, video_full
     GRADE = 'grade' #grade
@@ -82,7 +81,15 @@ class CourseUpdateTypes(object):
     OTHER = 'other' #proctoring, group, special_exams, advanced_modules
     CANDIDATE = "candidate" # возможно измененный блок
 
-
+    TYPES = (
+        (PROBLEM_BLOCK, "Problem"),
+        (VIDEO_BLOCK, "Video"),
+        (COURSE_PART, "Chapter/Subsequence/Vertical"),
+        (GRADE, "Grades"),
+        (DATES, "Dates"),
+        (CANDIDATE, "Candidate"),
+        (OTHER, "Other")
+    )
     @classmethod
     def candidate(cls, usage_id):
         return "{} {}".format(cls.CANDIDATE, usage_id)
@@ -93,9 +100,15 @@ class CourseUpdate(models.Model, CourseUpdateTypes):
     created_at = models.DateTimeField(default=now,
                                       help_text=_("The date when validation was done"))
     username = models.CharField(max_length=100, blank=True, help_text="User who performed validation")
+    change_type = models.CharField(max_length=100, choices=CourseUpdateTypes.TYPES, default=CourseUpdateTypes.OTHER,
+                                   help_text="Type of change in course")
     change = models.TextField()
 
-    objects = CourseRelatedManager
+    objects = CourseRelatedManager()
 
     def __unicode__(self):
         return u"{}, {}:{}".format(str(self.course.course_id), str(self.created_at), self.change)
+
+    @staticmethod
+    def create(*args, **kwargs):
+        return CourseUpdate.objects.create(*args, **kwargs)

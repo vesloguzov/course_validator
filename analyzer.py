@@ -3,7 +3,6 @@ from xmodule.modulestore.django import modulestore
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from .models import CourseValidation, CourseUpdate
 
-
 class ChangeAnalyzer(object):
     """
     Анализ изменения с предыдущей валидации
