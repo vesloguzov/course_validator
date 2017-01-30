@@ -115,11 +115,11 @@ class ReportIOMixinDB():
                 line = delim.join((json.dumps(self._unicodize(pr[k]), ensure_ascii=False)) for k in fields)
                 filetext += ("\n"+line)
 
-            saved = CourseValidation.objects.create(course_id=self.course_key_string,
+            saved = CourseValidation.objects.create(course_id=self.course_id,
                                             username=self.request.user.username,
                                             full_validation_report=filetext,
                                             )
-            info = "id:{}, readable:{}, pk:{}".format(self.course_key_string, saved.readable_name, saved.pk)
+            info = "id:{}, readable:{}, pk:{}".format(self.course_id, saved.readable_name, saved.pk)
             logging.info("Report is saved:{}".format(info))
 
         except Exception as e:
@@ -138,8 +138,8 @@ class ReportIOMixinDB():
         return reports
 
     @classmethod
-    def get_saved_reports_for_course(cls, course_key_string):
-        validations = CourseValidation.get_course_validations(course_key_string)
+    def get_saved_reports_for_course(cls, course_id):
+        validations = CourseValidation.get_course_validations(course_id)
         return [v.readable_name for v in validations]
 
     def _unicodize(self, item):

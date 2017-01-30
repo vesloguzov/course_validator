@@ -70,6 +70,11 @@ class CourseValidation(models.Model):
         videos = [i for i in items if i.category == "video"]
         return [str(i.location) for i in videos]
 
+    def get_video_keys(self):
+        vk = self.video_keys.split(",")
+        if len(vk) == 1 and not vk[0]:
+            return []
+        return vk
 
 class CourseUpdateTypes(object):
     PROBLEM_BLOCK = 'problem_block' #module, response_types, ora, items_visibility
@@ -107,7 +112,7 @@ class CourseUpdate(models.Model, CourseUpdateTypes):
     objects = CourseRelatedManager()
 
     def __unicode__(self):
-        return u"{}, {}:{}".format(str(self.course.course_id), str(self.created_at), self.change)
+        return u"{}: {},{},{}".format(str(self.change_type), str(self.course.course_id), str(self.created_at), self.change)
 
     @staticmethod
     def create(*args, **kwargs):

@@ -2,7 +2,9 @@
 from django.dispatch.dispatcher import receiver
 from django.contrib.auth.models import User
 from django.conf import settings
+import json
 import logging
+
 
 from opaque_keys.edx.keys import UsageKey
 from track.backends import BaseBackend
@@ -26,7 +28,13 @@ class XBlockChangeProcessor(object):
             self._init()
 
     def _is_valid_change(self):
-        if self.request.method in ["GET", "POST"]:
+        if self.request.method == "POST":
+            usage_id = json.loads(self.response.content).get("locator", None)
+            if not usage_id:
+                return False
+            self.usage_id = usage_id
+            return True
+        if self.request.method in ["GET"]:
             return False
         if not self.usage_id:
             return False
@@ -50,7 +58,7 @@ class XBlockChangeProcessor(object):
     def run(self):
         if not self.valid:
             return
-        if self.request.method == "DELETE":
+        if self.request.method in ["DELETE", "POST"]:
             self._save_update()
             return
         if self.category == "video":
@@ -140,7 +148,6 @@ class DjangoTrackerBackend(BaseBackend):
         :param event:
         :return:
         """
-        #print(event)
         username = event['username']
         if "studio_view" in event['event_type']:
             try:
