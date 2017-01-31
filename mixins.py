@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from datetime import timedelta as td
+from itertools import chain
 import json
 import logging
 import urllib
@@ -116,6 +117,7 @@ class ReportIOMixinDB():
                 filetext += ("\n"+line)
 
             saved = CourseValidation.objects.create(course_id=self.course_id,
+                                            branch=self.branch,
                                             username=self.request.user.username,
                                             full_validation_report=filetext,
                                             )
@@ -139,8 +141,11 @@ class ReportIOMixinDB():
 
     @classmethod
     def get_saved_reports_for_course(cls, course_id):
-        validations = CourseValidation.get_course_validations(course_id)
-        return [v.readable_name for v in validations]
+        validations_draft = CourseValidation.get_course_validations(course_id)
+        validations_pub = CourseValidation.get_course_validations(course_id, branch="published-branch")
+        validations = [x for x in chain(validations_draft, validations_pub)]
+        validations.sort(key=lambda x: x.created_at)
+        return [v.readable_name for v in validations][::-1]
 
     def _unicodize(self, item):
         item_unicoded = item

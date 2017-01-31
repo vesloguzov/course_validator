@@ -38,8 +38,9 @@ def course_validator_handler(request, course_key_string=None):
         data = None
         form_data = dict(request.POST)
         type_ = form_data.pop("type-of-form")[0]
+        branch = form_data.pop("branch", ["draft-branch"])[0]
         if type_ == u'new-validation':
-            data = cv.get_new_validation(form_data)
+            data = cv.get_new_validation(form_data, branch)
         elif type_ == u'old-validation':
             data = cv.get_old_validation(form_data)
         context['sections'] = data
@@ -48,16 +49,23 @@ def course_validator_handler(request, course_key_string=None):
         res = render_to_response("validator_results.html", context)
         return JsonResponse({"html": str(res.content)})
 
-    analyzer = ChangeAnalyzer(course_id)
+    db = "draft-branch"
+    analyzer_draft = ChangeAnalyzer(course_id, None)
+    pb = "published-branch"
+    analyzer_published = ChangeAnalyzer(course_id, pb)
+    analyzer_report = {
+        db: analyzer_draft.report(),
+        pb: analyzer_published.report()
+    }
     saved_reports = CourseValid.get_saved_reports_for_course(course_id)
     additional_info = cv.get_additional_info()
+    additional_info["analyzer_report"] = analyzer_report
     context.update({
         "csrf": csrf_token,
         "course_id":course_id,
         "context_course": course_module,
         "validate_url": execute_url,
         "saved_reports": saved_reports,
-        "analyzer_report":analyzer.report(),
         'info': additional_info
     })
     return render_to_response("validator.html", context)

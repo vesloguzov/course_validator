@@ -133,14 +133,30 @@
             if (chosen_radio.value == "old-validation") {
                 $('.form-validation fieldset.new-validation-options').attr('disabled', true);
                 $('.form-validation select.old-validation-options').attr('disabled', false);
-                $(".form-validation input[type=submit]").attr('value', '${_("Load validation")}');
+                $('.form-validation input[type=submit]').attr('value', '${_("Load validation")}');
+
+                var branch = $('.form-validation input.branch');
+                branch.attr('disabled', true);
+                branch.attr('checked', false);
 
             }
             if (chosen_radio.value == "new-validation") {
                 $('.form-validation fieldset.new-validation-options').attr('disabled', false);
                 $('.form-validation select.old-validation-options').attr('disabled', true);
-                $(".form-validation input[type=submit]").attr('value', '${_("Validate Course")}');
+                $('.form-validation input[type=submit]').attr('value', '${_("Validate Course")}');
+                $('.form-validation input.branch').attr('disabled', false);
 
+            }
+        }
+        function branch_option(chosen_radio){
+            var branch = chosen_radio.value;
+            if (branch == "draft-branch"){
+                $(".analyzer-report-draft").attr('hidden', false);
+                $(".analyzer-report-published").attr('hidden', true);
+            }
+            if (branch == "published-branch"){
+                $(".analyzer-report-draft").attr('hidden', true);
+                $(".analyzer-report-published").attr('hidden', false);
             }
         }
     </script>
@@ -162,7 +178,8 @@
 
                 <fieldset class="form-entirely">
                     <h1 class="title">${_("Validation")}</h1>
-                    %for rep in analyzer_report:
+                    <div class="analyzer-report-draft">
+                    %for rep in info['analyzer_report']['draft-branch']:
                         % if rep["result"]:
                             <div class="passed">
                         % else:
@@ -171,14 +188,34 @@
                             <p class="highlight message">${_(rep["text"])}</p>
                             </div>
                     %endfor
+                    </div>
+                    <div class="analyzer-report-published" hidden>
+                    %for rep in info['analyzer_report']['published-branch']:
+                        % if rep["result"]:
+                            <div class="passed">
+                        % else:
+                            <div class="failed">
+                        % endif
+                            <p class="highlight message">${_(rep["text"])}</p>
+                            </div>
+                    %endfor
+                    </div>
                     <h1 class="subtitle">${_("Action type")}</h1>
                     <input name="type-of-form" type="radio" value="new-validation" checked
-                           onclick="type_of_form(this)">${_("Proceed new validation")}<br>
-                        <input name="type-of-form" type="radio" value="old-validation"
-                            % if not saved_reports:
-                                disabled="disabled"
-                            % endif
-                         onclick="type_of_form(this)">${_("Load previous validation")}<br>
+                           onclick="type_of_form(this)">${_("Proceed new validation")} <br>
+                    <input name="type-of-form" type="radio" value="old-validation"
+                        % if not saved_reports:
+                           disabled="disabled"
+                        % endif
+                           onclick="type_of_form(this)">${_("Load previous validation")}<br>
+
+                    <h1 class="subtitle">${_("Branch version")}</h1>
+                    <input name="branch" class="branch" type="radio" value="draft-branch" checked
+                           onclick="branch_option(this)">${_("Draft version")}<br>
+                    <input name="branch" class="branch" type="radio" value="published-branch"
+                           onclick="branch_option(this)">${_("Published version")}<br>
+
+
                     <fieldset class="new-validation-options">
                         <h1 class="subtitle">${_("Validation scenarios")}</h1>
                         <table class="form-options-table">

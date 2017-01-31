@@ -547,8 +547,9 @@ class CourseValid(VideoMixin, ReportIOMixinDB, Validations):
         self.reports = []
         self.additional_info = dict()
 
-    def get_new_validation(self, form_data):
-        self.items = self.store.get_items(self.course_key)
+    def get_new_validation(self, form_data, branch=None):
+        self.branch = branch
+        self.items = self.store.get_items(self.course_key.for_branch(branch))
         self.course = self.store.get_course(self.course_key)
         scenarios = [s for s in form_data.keys() if s in CourseValid.scenarios_names]
         self._validate_scenarios(scenarios)
