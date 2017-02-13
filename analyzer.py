@@ -55,6 +55,8 @@ class ChangeAnalyzer(object):
     def is_course_changed(self):
         items = self.store.get_items(self.course_key)
         last_validation = self._get_last_course_validation()
+        if not last_validation:
+            return True
         date = last_validation.created_at
         for item in items:
             if item.edited_on > date:

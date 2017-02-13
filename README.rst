@@ -154,12 +154,12 @@ Installation
 ============
 
 1. - vagrant ssh
-   - sudo su edxapp
-   - cd /edx/app/edxapp/venvs/edxapp/src/
-   - git clone https://github.com/zimka/edx-course-validator.git
+   - sudo su edxapp -s /bin/bash
+   - cd /edx/app/edxapp/edx-platform/cms/djangoapps
+   - git clone https://github.com/zimka/course_validator.git
 
-2. ``python -m pip install /edx/app/edxapp/venvs/edxapp/src/edx-course-validator/``
-3. ``nano /edx/app/edxapp/edx-platform/cms/envs/devstack.py``
+2. cp /edx/app/edxapp/edx-platform/cms/djangoapps/course_validator/templates/* /edx/app/edxapp/edx-platform/cms/templates/
+3. ``nano /edx/app/edxapp/edx-platform/cms/envs/aws.py``
     (or other environment.py): paste code at the end of file
 
   ::
@@ -167,9 +167,6 @@ Installation
     FEATURES["COURSE_VALIDATOR"] = True
     if FEATURES.get("COURSE_VALIDATOR"):
         INSTALLED_APPS += ("course_validator",)
-        CV_PATH = REPO_ROOT.dirname() / "venvs" / "edxapp" / "src" / "edx-course-validator"/"course_validator"
-        MAKO_TEMPLATES['main'] += (CV_PATH/"templates",)
-        LOCALE_PATHS += (CV_PATH/"locale",)
 
 
   If you install course-validator in other directory, i.e. in /edx/app/edxapp/edx-platform/,
@@ -227,7 +224,10 @@ Installation
         </li>
       % endif
 
-6. Restart cms, check that new item "Validation" is in CMS > Some Course >  Tools
+6. - source /edx/app/edxapp/edx-platform/venvs/edxapp/bin/activate
+   - python manage.py cms --settings=aws migrate
+
+7. Restart cms, check that new item "Validation" is available in CMS > Some Course >  Tools
 
 Settings info
 =============
